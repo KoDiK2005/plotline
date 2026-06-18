@@ -42,6 +42,7 @@ export function VariablesPanel({ story, onUpdate }: VariablesPanelProps) {
               <input
                 value={variable.name}
                 onChange={(e) => onUpdate((s) => updateVariable(s, variable.id, { name: e.target.value }))}
+                aria-label="Имя переменной"
                 className={`${fieldClass} w-28`}
               />
               <span className="text-xs text-slate-400">=</span>
@@ -51,12 +52,14 @@ export function VariablesPanel({ story, onUpdate }: VariablesPanelProps) {
                 onChange={(e) =>
                   onUpdate((s) => updateVariable(s, variable.id, { initialValue: Number(e.target.value) || 0 }))
                 }
+                aria-label="Начальное значение"
                 className={`${fieldClass} w-16`}
               />
               <button
                 onClick={() => onUpdate((s) => deleteVariable(s, variable.id))}
                 className="px-1 text-xs text-red-500 hover:text-red-600"
                 title="Удалить переменную"
+                aria-label="Удалить переменную"
               >
                 ✕
               </button>

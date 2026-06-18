@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { AchievementsPanel } from './AchievementsPanel'
@@ -48,5 +48,31 @@ describe('AchievementsPanel', () => {
 
     await user.click(screen.getByText('Unlocked One'))
     expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('exposes dialog semantics, moves focus into the panel, and closes on Escape', () => {
+    const onClose = vi.fn()
+    render(<AchievementsPanel achievements={achievements} onClose={onClose} />)
+
+    const dialog = screen.getByRole('dialog')
+    expect(dialog).toHaveAttribute('aria-modal', 'true')
+    expect(dialog).toHaveFocus()
+
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('restores focus to the previously focused element on unmount', () => {
+    const trigger = document.createElement('button')
+    document.body.appendChild(trigger)
+    trigger.focus()
+    expect(trigger).toHaveFocus()
+
+    const { unmount } = render(<AchievementsPanel achievements={achievements} onClose={() => {}} />)
+    expect(trigger).not.toHaveFocus()
+
+    unmount()
+    expect(trigger).toHaveFocus()
+    trigger.remove()
   })
 })

@@ -43,7 +43,11 @@ export function NodeInspector({ story, nodeId, onUpdate, onClose, onRequestDelet
     <aside className="flex w-80 shrink-0 flex-col gap-4 overflow-y-auto border-l border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Сцена</h2>
-        <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+        <button
+          onClick={onClose}
+          aria-label="Закрыть панель сцены"
+          className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+        >
           ✕
         </button>
       </div>
@@ -96,12 +100,14 @@ export function NodeInspector({ story, nodeId, onUpdate, onClose, onRequestDelet
                 value={choice.text}
                 onChange={(e) => onUpdate((s) => updateChoiceText(s, nodeId, choice.id, e.target.value))}
                 placeholder="Текст варианта"
+                aria-label="Текст варианта"
                 className={`${fieldClass} mb-1.5 w-full py-1 text-xs`}
               />
               <div className="flex gap-1.5">
                 <select
                   value={choice.targetNodeId ?? ''}
                   onChange={(e) => onUpdate((s) => linkChoice(s, nodeId, choice.id, e.target.value || null))}
+                  aria-label="Связанная сцена"
                   className={`${fieldClass} flex-1 py-1 text-xs`}
                 >
                   <option value="">— не связано —</option>
@@ -115,6 +121,7 @@ export function NodeInspector({ story, nodeId, onUpdate, onClose, onRequestDelet
                   variant="ghost"
                   className="px-2 py-1 text-xs text-red-500"
                   onClick={() => onUpdate((s) => deleteChoice(s, nodeId, choice.id))}
+                  aria-label="Удалить вариант"
                 >
                   ✕
                 </Button>
@@ -136,6 +143,7 @@ export function NodeInspector({ story, nodeId, onUpdate, onClose, onRequestDelet
                           ),
                         )
                       }
+                      aria-label="Переменная условия"
                       className={`${fieldClass} flex-1 py-1 text-xs`}
                     >
                       <option value="">— нет —</option>
@@ -157,6 +165,7 @@ export function NodeInspector({ story, nodeId, onUpdate, onClose, onRequestDelet
                               }),
                             )
                           }
+                          aria-label="Сравнение"
                           className={`${fieldClass} py-1 text-xs`}
                         >
                           {Object.entries(COMPARATOR_LABELS).map(([key, label]) => (
@@ -176,6 +185,7 @@ export function NodeInspector({ story, nodeId, onUpdate, onClose, onRequestDelet
                               }),
                             )
                           }
+                          aria-label="Значение условия"
                           className={`${fieldClass} w-14 py-1 text-xs`}
                         />
                       </>
@@ -215,6 +225,7 @@ export function NodeInspector({ story, nodeId, onUpdate, onClose, onRequestDelet
                               ),
                             )
                           }
+                          aria-label="Переменная эффекта"
                           className={`${fieldClass} flex-1 py-1 text-xs`}
                         >
                           {story.variables.map((v) => (
@@ -237,6 +248,7 @@ export function NodeInspector({ story, nodeId, onUpdate, onClose, onRequestDelet
                               ),
                             )
                           }
+                          aria-label="Операция эффекта"
                           className={`${fieldClass} py-1 text-xs`}
                         >
                           <option value="set">=</option>
@@ -257,6 +269,7 @@ export function NodeInspector({ story, nodeId, onUpdate, onClose, onRequestDelet
                               ),
                             )
                           }
+                          aria-label="Значение эффекта"
                           className={`${fieldClass} w-14 py-1 text-xs`}
                         />
                         <button
@@ -265,6 +278,7 @@ export function NodeInspector({ story, nodeId, onUpdate, onClose, onRequestDelet
                               setChoiceEffects(s, nodeId, choice.id, choice.effects.filter((_, i) => i !== index)),
                             )
                           }
+                          aria-label="Удалить эффект"
                           className="px-1 text-red-500 hover:text-red-600"
                         >
                           ✕

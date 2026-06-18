@@ -1,4 +1,6 @@
+import { useId } from 'react'
 import type { AchievementStatus } from '../engine/achievements'
+import { useDialogA11y } from '../hooks/useDialogA11y'
 import { Button } from './Button'
 
 interface AchievementsPanelProps {
@@ -8,15 +10,22 @@ interface AchievementsPanelProps {
 
 export function AchievementsPanel({ achievements, onClose }: AchievementsPanelProps) {
   const unlockedCount = achievements.filter((a) => a.unlocked).length
+  const titleId = useId()
+  const dialogRef = useDialogA11y(onClose)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
       <div
-        className="flex max-h-[80vh] w-full max-w-md flex-col rounded-xl bg-white p-5 shadow-xl dark:bg-slate-900"
+        ref={dialogRef as React.RefObject<HTMLDivElement>}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="flex max-h-[80vh] w-full max-w-md flex-col rounded-xl bg-white p-5 shadow-xl outline-none dark:bg-slate-900"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+          <h2 id={titleId} className="text-base font-semibold text-slate-900 dark:text-slate-100">
             Достижения · {unlockedCount}/{achievements.length}
           </h2>
           <button

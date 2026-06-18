@@ -204,10 +204,16 @@ function EditorScreenInner() {
           <StatPill label="концовок" value={stats.endingCount} />
         </div>
         <div className="flex gap-1">
-          <Button variant="ghost" disabled={!canUndo} onClick={undo} title="Отменить (Ctrl+Z)">
+          <Button variant="ghost" disabled={!canUndo} onClick={undo} title="Отменить (Ctrl+Z)" aria-label="Отменить">
             ↶
           </Button>
-          <Button variant="ghost" disabled={!canRedo} onClick={redo} title="Повторить (Ctrl+Shift+Z)">
+          <Button
+            variant="ghost"
+            disabled={!canRedo}
+            onClick={redo}
+            title="Повторить (Ctrl+Shift+Z)"
+            aria-label="Повторить"
+          >
             ↷
           </Button>
         </div>

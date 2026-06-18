@@ -115,9 +115,15 @@ export function LibraryScreen() {
       </div>
 
       {error && (
-        <div className="mt-4 flex items-start justify-between gap-3 rounded-lg bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400">
-          <span>{error}</span>
-          <button onClick={() => setError(null)} className="font-medium">
+        <div
+          role="alert"
+          className="mt-4 flex items-start justify-between gap-3 rounded-lg bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400"
+        >
+          <span>
+            <span aria-hidden="true">⚠ </span>
+            <span>{error}</span>
+          </span>
+          <button onClick={() => setError(null)} aria-label="Закрыть" className="font-medium">
             ✕
           </button>
         </div>
