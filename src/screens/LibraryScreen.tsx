@@ -6,6 +6,7 @@ import { StoryCard } from '../components/StoryCard'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { computeAchievements } from '../engine/achievements'
 import { buildStandaloneHtml } from '../engine/exportHtml'
+import { SORT_LABELS, sortStories, type SortOption } from '../engine/librarySort'
 import { parseLibraryBackup, parseStoryJson } from '../engine/storySchema'
 import { useLibraryStore } from '../store/useLibraryStore'
 import { useProgressStore } from '../store/useProgressStore'
@@ -23,6 +24,7 @@ export function LibraryScreen() {
   const openPlayer = useUIStore((s) => s.openPlayer)
 
   const [query, setQuery] = useState('')
+  const [sort, setSort] = useState<SortOption>('updated')
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [showAchievements, setShowAchievements] = useState(false)
@@ -36,10 +38,11 @@ export function LibraryScreen() {
 
   const storyList = useMemo(
     () =>
-      Object.values(stories)
-        .filter((s) => s.title.toLowerCase().includes(query.toLowerCase()))
-        .sort((a, b) => b.updatedAt - a.updatedAt),
-    [stories, query],
+      sortStories(
+        Object.values(stories).filter((s) => s.title.toLowerCase().includes(query.toLowerCase())),
+        sort,
+      ),
+    [stories, query, sort],
   )
 
   async function handleImportFile(file: File) {
@@ -80,13 +83,27 @@ export function LibraryScreen() {
       </div>
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <input
-          type="text"
-          placeholder="Поиск историй..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="w-full max-w-xs rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-violet-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-        />
+        <div className="flex flex-wrap gap-2">
+          <input
+            type="text"
+            placeholder="Поиск историй..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="w-full max-w-xs rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-violet-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+          />
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value as SortOption)}
+            aria-label="Сортировка"
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-violet-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+          >
+            {Object.entries(SORT_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="flex flex-wrap gap-2">
           <input
             ref={fileInputRef}

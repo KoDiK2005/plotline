@@ -161,6 +161,16 @@ describe('LibraryScreen', () => {
     ).toBeInTheDocument()
   })
 
+  it('reorders the story cards alphabetically when "По названию" is selected', async () => {
+    const user = userEvent.setup()
+    render(<LibraryScreen />)
+
+    await user.selectOptions(screen.getByLabelText('Сортировка'), 'По названию')
+
+    const titles = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)
+    expect(titles).toEqual(['Ключ от чердака', 'Кофейня на перекрёстке', 'Сигнал из глубины'])
+  })
+
   it('opens and closes the achievements panel from the header button', async () => {
     const user = userEvent.setup()
     render(<LibraryScreen />)
