@@ -22,7 +22,7 @@ Plotline — конструктор и плеер ветвящихся инте�
 - [Tailwind CSS v4](https://tailwindcss.com/) через `@tailwindcss/vite`, класс-based dark mode
 - [React Flow](https://reactflow.dev/) для графа сцен в редакторе и режима карты в плеере
 - [Zustand](https://github.com/pmndrs/zustand) с `persist` (localStorage) для библиотеки историй, прогресса и настроек
-- [Vitest](https://vitest.dev/) + Testing Library для модульных тестов
+- [Vitest](https://vitest.dev/) + Testing Library для модульных тестов: 92 теста — чистая логика движка (`engine/`) и поведение экранов (`screens/`) и карточки истории через рендеринг и пользовательские взаимодействия (`@testing-library/user-event`)
 
 ## Архитектура
 
@@ -57,6 +57,8 @@ npm run build     # проверка типов (tsc -b) + production-сборк
 npm run test      # запуск тестов (vitest run)
 npm run lint      # ESLint
 ```
+
+GitHub Actions (`.github/workflows/ci.yml`) прогоняет lint, тесты и сборку на каждый push и pull request.
 
 ## Импорт и экспорт
 
