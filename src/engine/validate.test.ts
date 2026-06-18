@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addChoice, addNode, createStory, linkChoice, updateNode } from './storyOps'
+import { addChoice, addNode, createStory, updateNode } from './storyOps'
 import { hasBlockingErrors, validateStory } from './validate'
 
 describe('validateStory', () => {

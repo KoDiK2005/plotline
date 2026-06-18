@@ -1,73 +1,59 @@
-# React + TypeScript + Vite
+# Plotline
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Plotline — конструктор и плеер ветвящихся интерактивных историй. Сочиняйте сюжет как граф сцен и выборов, проверяйте его на ошибки одним кликом и проходите получившуюся историю тут же, в браузере.
 
-Currently, two official plugins are available:
+## Возможности
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Визуальный редактор графа** — сцены и переходы между ними редактируются как узлы и связи на холсте ([React Flow](https://reactflow.dev/)): перетаскивание, авторасстановка по слоям, мини-карта.
+- **Инспектор сцены** — заголовок, текст, варианты выбора и их цели редактируются в боковой панели; одной кнопкой сцена назначается стартовой.
+- **Проверка целостности истории** — встроенный валидатор находит недостижимые сцены, пустой текст, выборы без цели и отсутствие старта, с переходом прямо к проблемной сцене.
+- **Плеер с двумя режимами** — обычное текстовое прохождение со списком вариантов и историей пройденного пути, либо режим карты, где видно всю историю и текущее положение в ней.
+- **Прогресс и статистика** — для каждой истории отдельно отслеживаются посещённые сцены, найденные концовки и число прохождений (сохраняется в localStorage).
+- **Библиотека историй** — поиск, дублирование, удаление, экспорт в JSON (один файл или резервная копия всей библиотеки) и импорт обратно с валидацией структуры.
+- **Светлая/тёмная тема** на выбор.
+- Две полноценные сэмпл-истории на русском, чтобы сразу было что почитать: научно-фантастический хоррор «Сигнал из глубины» и slice-of-life «Кофейня на перекрёстке».
 
-## React Compiler
+## Технологии
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- [Vite](https://vite.dev/) + [React 19](https://react.dev/) + TypeScript (строгий режим, `tsc -b`)
+- [Tailwind CSS v4](https://tailwindcss.com/) через `@tailwindcss/vite`, класс-based dark mode
+- [React Flow](https://reactflow.dev/) для графа сцен в редакторе и режима карты в плеере
+- [Zustand](https://github.com/pmndrs/zustand) с `persist` (localStorage) для библиотеки историй, прогресса и настроек
+- [Vitest](https://vitest.dev/) + Testing Library для модульных тестов
 
-## Expanding the ESLint configuration
+## Архитектура
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Доменная логика полностью отделена от UI и живёт в `src/engine/` как чистые иммутабельные функции — это позволяет тестировать её без рендеринга компонентов и держать React Flow исключительно слоем визуализации.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+src/
+├─ types/story.ts        # Story, StoryNode, Choice — доменные типы
+├─ engine/
+│  ├─ id.ts               # генерация идентификаторов
+│  ├─ storyOps.ts         # неизменяемые CRUD-операции над графом истории
+│  ├─ traverse.ts         # BFS-обходы: достижимость, концовки, статистика, авторасстановка
+│  ├─ validate.ts         # поиск проблем истории (ошибки/предупреждения)
+│  ├─ play.ts             # редьюсер прохождения истории игроком
+│  ├─ storySchema.ts      # рантайм-валидация JSON при импорте файлов
+│  └─ flowAdapters.ts     # преобразование Story → узлы/рёбра React Flow
+├─ store/                 # Zustand-хранилища (библиотека, прогресс, настройки, UI-навигация)
+├─ components/            # переиспользуемые презентационные компоненты
+├─ screens/               # Library / Editor / Player — экраны приложения
+└─ data/sampleStories.ts  # встроенные демо-истории
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Поток данных в редакторе и плеере единообразен: единственный источник истины — `Story` в Zustand-хранилище; React Flow получает узлы/рёбра, пересчитанные из него через `flowAdapters`, а любое изменение графа (перетаскивание, соединение, удаление) уходит обратно в хранилище через функции `engine/storyOps.ts`.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Начало работы
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev       # дев-сервер с HMR
+npm run build     # проверка типов (tsc -b) + production-сборка
+npm run test      # запуск тестов (vitest run)
+npm run lint      # ESLint
 ```
+
+## Импорт и экспорт
+
+Каждую историю можно экспортировать как отдельный JSON-файл либо выгрузить резервную копию всей библиотеки сразу. При импорте файл проходит рантайм-валидацию структуры (`engine/storySchema.ts`) — так что случайно подсунутый произвольный JSON не сломает приложение, а просто покажет понятную ошибку.

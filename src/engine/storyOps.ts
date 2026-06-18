@@ -118,6 +118,14 @@ export function deleteChoice(story: Story, nodeId: string, choiceId: string): St
   return touch({ ...story, nodes })
 }
 
+export function applyPositions(story: Story, positions: Record<string, { x: number; y: number }>): Story {
+  const nodes = { ...story.nodes }
+  for (const [id, position] of Object.entries(positions)) {
+    if (nodes[id]) nodes[id] = { ...nodes[id], position }
+  }
+  return touch({ ...story, nodes })
+}
+
 export function duplicateStory(story: Story, newTitle?: string): Story {
   const now = Date.now()
   return {
