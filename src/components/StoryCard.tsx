@@ -1,4 +1,5 @@
 import type { Story } from '../types/story'
+import { estimateReadingMinutes } from '../engine/readingTime'
 import { getStoryStats } from '../engine/traverse'
 import { useProgressStore } from '../store/useProgressStore'
 import { Button } from './Button'
@@ -16,6 +17,7 @@ interface StoryCardProps {
 
 export function StoryCard({ story, onPlay, onEdit, onDuplicate, onExport, onExportHtml, onDelete }: StoryCardProps) {
   const stats = getStoryStats(story)
+  const readingMinutes = estimateReadingMinutes(story)
   const progress = useProgressStore((s) => s.getProgress(story.id))
 
   return (
@@ -28,6 +30,7 @@ export function StoryCard({ story, onPlay, onEdit, onDuplicate, onExport, onExpo
       <div className="mt-3 flex flex-wrap gap-1.5">
         <StatPill label="сцен" value={stats.nodeCount} />
         <StatPill label="концовок" value={stats.endingCount} />
+        <StatPill label="мин чтения" value={`~${readingMinutes}`} />
         {stats.unreachableCount > 0 && (
           <StatPill label="недостижимых" value={stats.unreachableCount} tone="warning" />
         )}

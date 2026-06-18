@@ -66,6 +66,12 @@ describe('StoryCard', () => {
     expect(endingPill).toHaveTextContent('1концовок')
   })
 
+  it('renders a "~N мин чтения" pill estimating reading time', () => {
+    renderCard()
+    const readingPill = screen.getByText('мин чтения', { exact: false }).closest('span')!
+    expect(readingPill).toHaveTextContent('~1мин чтения')
+  })
+
   it('does not render the "недостижимых" pill when there are no unreachable nodes', () => {
     renderCard()
     expect(screen.queryByText('недостижимых')).not.toBeInTheDocument()
