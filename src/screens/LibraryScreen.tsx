@@ -22,6 +22,7 @@ export function LibraryScreen() {
   const progress = useProgressStore((s) => s.progress)
   const openEditor = useUIStore((s) => s.openEditor)
   const openPlayer = useUIStore((s) => s.openPlayer)
+  const openShortcuts = useUIStore((s) => s.openShortcuts)
 
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<SortOption>('updated')
@@ -77,6 +78,9 @@ export function LibraryScreen() {
         <div className="flex items-center gap-2">
           <Button variant="ghost" onClick={() => setShowAchievements(true)}>
             🏆 Достижения · {unlockedCount}/{achievements.length}
+          </Button>
+          <Button variant="ghost" onClick={openShortcuts} title="Горячие клавиши (?)" aria-label="Горячие клавиши">
+            ⌨
           </Button>
           <ThemeToggle />
         </div>
