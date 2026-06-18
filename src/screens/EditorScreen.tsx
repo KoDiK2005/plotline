@@ -19,6 +19,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog'
 import { StatPill } from '../components/StatPill'
 import { IssuesPanel } from '../components/Editor/IssuesPanel'
 import { NodeInspector } from '../components/Editor/NodeInspector'
+import { PreviewPanel } from '../components/Editor/PreviewPanel'
 import { SceneNode } from '../components/Editor/SceneNode'
 import { VariablesPanel } from '../components/Editor/VariablesPanel'
 import type { SceneNodeData } from '../engine/flowAdapters'
@@ -51,6 +52,7 @@ function EditorScreenInner() {
   const [showIssues, setShowIssues] = useState(false)
   const [showVariables, setShowVariables] = useState(false)
   const [confirmDeleteNodeId, setConfirmDeleteNodeId] = useState<string | null>(null)
+  const [previewNodeId, setPreviewNodeId] = useState<string | null>(null)
 
   const [past, setPast] = useState<Story[]>([])
   const [future, setFuture] = useState<Story[]>([])
@@ -281,6 +283,7 @@ function EditorScreenInner() {
             onUpdate={mutate}
             onClose={() => selectNode(null)}
             onRequestDelete={() => setConfirmDeleteNodeId(selectedNodeId)}
+            onPreview={() => setPreviewNodeId(selectedNodeId)}
           />
         )}
       </div>
@@ -296,6 +299,10 @@ function EditorScreenInner() {
             setConfirmDeleteNodeId(null)
           }}
         />
+      )}
+
+      {previewNodeId && story.nodes[previewNodeId] && (
+        <PreviewPanel story={story} startNodeId={previewNodeId} onClose={() => setPreviewNodeId(null)} />
       )}
     </div>
   )

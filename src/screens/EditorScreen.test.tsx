@@ -1,8 +1,8 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EditorScreen } from './EditorScreen'
-import { createStory } from '../engine/storyOps'
+import { addChoice, addNode, createStory, linkChoice, updateNode } from '../engine/storyOps'
 import type { Story } from '../types/story'
 import { useLibraryStore } from '../store/useLibraryStore'
 import { useUIStore } from '../store/useUIStore'
@@ -165,6 +165,50 @@ describe('EditorScreen', () => {
     await user.type(nodeTitleInput, 'Forest')
 
     expect(useLibraryStore.getState().stories[story.id].nodes[nodeId].title).toBe('Forest')
+  })
+
+  it('opens the preview panel from the node inspector, shows scene text, and advances on choice click', async () => {
+    let story = createStory('Edit Me')
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { title: 'Старт', text: 'Текст старта' })
+    const { story: s2, nodeId: endId } = addNode(story)
+    story = s2
+    story = updateNode(story, endId, { title: 'Конец', text: 'Текст конца' })
+    story = addChoice(story, startId, 'Иди дальше')
+    story = linkChoice(story, startId, story.nodes[startId].choices[0].id, endId)
+    setupStory(story)
+
+    const user = userEvent.setup()
+    render(<EditorScreen />)
+
+    useUIStore.getState().selectNode(startId)
+    await screen.findByRole('heading', { name: 'Сцена' })
+
+    await user.click(screen.getByRole('button', { name: /Превью/ }))
+
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByText('Текст старта')).toBeInTheDocument()
+
+    await user.click(within(dialog).getByRole('button', { name: 'Иди дальше' }))
+    expect(within(dialog).getByText('Текст конца')).toBeInTheDocument()
+    expect(within(dialog).getByText('Конец ветки')).toBeInTheDocument()
+  })
+
+  it('closes the preview panel via its close button without mutating the story', async () => {
+    const story = createStory('Edit Me')
+    setupStory(story)
+    const nodeId = Object.keys(story.nodes)[0]
+    const user = userEvent.setup()
+    render(<EditorScreen />)
+
+    useUIStore.getState().selectNode(nodeId)
+    await screen.findByRole('heading', { name: 'Сцена' })
+    await user.click(screen.getByRole('button', { name: /Превью/ }))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Закрыть превью' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(useLibraryStore.getState().stories[story.id]).toEqual(story)
   })
 
   it('opens the variables panel and adds a variable', async () => {

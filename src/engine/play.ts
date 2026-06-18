@@ -6,11 +6,12 @@ export interface PlayState {
   variables: Record<string, number>
 }
 
-export function startPlay(story: Story): PlayState | null {
-  if (!story.startNodeId || !story.nodes[story.startNodeId]) return null
+export function startPlay(story: Story, fromNodeId?: string): PlayState | null {
+  const nodeId = fromNodeId ?? story.startNodeId
+  if (!nodeId || !story.nodes[nodeId]) return null
   const variables: Record<string, number> = {}
   for (const variable of story.variables) variables[variable.id] = variable.initialValue
-  return { currentNodeId: story.startNodeId, history: [story.startNodeId], variables }
+  return { currentNodeId: nodeId, history: [nodeId], variables }
 }
 
 function meetsCondition(choice: Choice, variables: Record<string, number>): boolean {

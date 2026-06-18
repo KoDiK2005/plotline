@@ -26,13 +26,14 @@ interface NodeInspectorProps {
   onUpdate: (updater: (story: Story) => Story) => void
   onClose: () => void
   onRequestDelete: () => void
+  onPreview: () => void
 }
 
 const fieldClass =
   'rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-900 outline-none ' +
   'focus:border-violet-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100'
 
-export function NodeInspector({ story, nodeId, onUpdate, onClose, onRequestDelete }: NodeInspectorProps) {
+export function NodeInspector({ story, nodeId, onUpdate, onClose, onRequestDelete, onPreview }: NodeInspectorProps) {
   const node = story.nodes[nodeId]
   if (!node) return null
 
@@ -71,13 +72,19 @@ export function NodeInspector({ story, nodeId, onUpdate, onClose, onRequestDelet
         />
       </label>
 
-      <Button
-        variant={isStart ? 'secondary' : 'primary'}
-        disabled={isStart}
-        onClick={() => onUpdate((s) => setStartNode(s, nodeId))}
-      >
-        {isStart ? 'Это стартовая сцена' : 'Сделать стартовой'}
-      </Button>
+      <div className="flex gap-2">
+        <Button
+          variant={isStart ? 'secondary' : 'primary'}
+          disabled={isStart}
+          className="flex-1"
+          onClick={() => onUpdate((s) => setStartNode(s, nodeId))}
+        >
+          {isStart ? 'Это стартовая сцена' : 'Сделать стартовой'}
+        </Button>
+        <Button variant="ghost" onClick={onPreview} title="Проверить эту сцену в плеере">
+          ▶ Превью
+        </Button>
+      </div>
 
       <div>
         <div className="mb-2 flex items-center justify-between">

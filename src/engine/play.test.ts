@@ -29,6 +29,17 @@ describe('startPlay', () => {
     const story = { ...createStory(), startNodeId: null }
     expect(startPlay(story)).toBeNull()
   })
+
+  it('starts at an arbitrary node when fromNodeId is given, ignoring the story start node', () => {
+    const { story, goodEndId } = branchingStory()
+    const state = startPlay(story, goodEndId)
+    expect(state).toEqual({ currentNodeId: goodEndId, history: [goodEndId], variables: {} })
+  })
+
+  it('returns null when fromNodeId does not exist in the story', () => {
+    const { story } = branchingStory()
+    expect(startPlay(story, 'not-a-real-node')).toBeNull()
+  })
 })
 
 describe('availableChoices / isEnding', () => {
