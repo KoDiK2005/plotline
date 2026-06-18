@@ -4,8 +4,8 @@ import { getEndingNodeIds } from '../engine/traverse'
 import { sampleStories } from './sampleStories'
 
 describe('sampleStories', () => {
-  it('ship at least two bundled stories', () => {
-    expect(sampleStories.length).toBeGreaterThanOrEqual(2)
+  it('ship at least three bundled stories', () => {
+    expect(sampleStories.length).toBeGreaterThanOrEqual(3)
   })
 
   it.each(sampleStories.map((story) => [story.title, story] as const))(

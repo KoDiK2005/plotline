@@ -1,4 +1,4 @@
-import type { Choice, Story, StoryNode } from '../types/story'
+import type { Choice, ChoiceCondition, ChoiceEffect, Story, StoryNode, StoryVariable } from '../types/story'
 import { generateId } from './id'
 
 function touch(story: Story): Story {
@@ -24,6 +24,7 @@ export function createStory(title = 'Новая история', description = '
     description,
     startNodeId: startNode.id,
     nodes: { [startNode.id]: startNode },
+    variables: [],
     createdAt: now,
     updatedAt: now,
   }
@@ -83,7 +84,7 @@ export function setStartNode(story: Story, nodeId: string): Story {
 export function addChoice(story: Story, nodeId: string, text = 'Новый вариант'): Story {
   const node = story.nodes[nodeId]
   if (!node) return story
-  const choice: Choice = { id: generateId('choice'), text, targetNodeId: null }
+  const choice: Choice = { id: generateId('choice'), text, targetNodeId: null, condition: null, effects: [] }
   const nodes = { ...story.nodes, [nodeId]: { ...node, choices: [...node.choices, choice] } }
   return touch({ ...story, nodes })
 }
@@ -116,6 +117,64 @@ export function deleteChoice(story: Story, nodeId: string, choiceId: string): St
   const choices = node.choices.filter((c) => c.id !== choiceId)
   const nodes = { ...story.nodes, [nodeId]: { ...node, choices } }
   return touch({ ...story, nodes })
+}
+
+export function setChoiceCondition(
+  story: Story,
+  nodeId: string,
+  choiceId: string,
+  condition: ChoiceCondition | null,
+): Story {
+  const node = story.nodes[nodeId]
+  if (!node) return story
+  const choices = node.choices.map((c) => (c.id === choiceId ? { ...c, condition } : c))
+  const nodes = { ...story.nodes, [nodeId]: { ...node, choices } }
+  return touch({ ...story, nodes })
+}
+
+export function setChoiceEffects(
+  story: Story,
+  nodeId: string,
+  choiceId: string,
+  effects: ChoiceEffect[],
+): Story {
+  const node = story.nodes[nodeId]
+  if (!node) return story
+  const choices = node.choices.map((c) => (c.id === choiceId ? { ...c, effects } : c))
+  const nodes = { ...story.nodes, [nodeId]: { ...node, choices } }
+  return touch({ ...story, nodes })
+}
+
+export function addVariable(story: Story, name = 'Переменная', initialValue = 0): { story: Story; variableId: string } {
+  const variable: StoryVariable = { id: generateId('var'), name, initialValue }
+  return { story: touch({ ...story, variables: [...story.variables, variable] }), variableId: variable.id }
+}
+
+export function updateVariable(
+  story: Story,
+  variableId: string,
+  patch: Partial<Pick<StoryVariable, 'name' | 'initialValue'>>,
+): Story {
+  if (!story.variables.some((v) => v.id === variableId)) return story
+  const variables = story.variables.map((v) => (v.id === variableId ? { ...v, ...patch } : v))
+  return touch({ ...story, variables })
+}
+
+export function deleteVariable(story: Story, variableId: string): Story {
+  if (!story.variables.some((v) => v.id === variableId)) return story
+  const variables = story.variables.filter((v) => v.id !== variableId)
+  const nodes: Record<string, StoryNode> = {}
+  for (const [id, node] of Object.entries(story.nodes)) {
+    nodes[id] = {
+      ...node,
+      choices: node.choices.map((choice) => ({
+        ...choice,
+        condition: choice.condition?.variableId === variableId ? null : choice.condition,
+        effects: choice.effects.filter((effect) => effect.variableId !== variableId),
+      })),
+    }
+  }
+  return touch({ ...story, nodes, variables })
 }
 
 export function applyPositions(story: Story, positions: Record<string, { x: number; y: number }>): Story {

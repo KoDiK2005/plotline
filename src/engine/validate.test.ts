@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addChoice, addNode, createStory, updateNode } from './storyOps'
+import { addChoice, addNode, createStory, setChoiceCondition, setChoiceEffects, updateNode } from './storyOps'
 import { hasBlockingErrors, validateStory } from './validate'
 
 describe('validateStory', () => {
@@ -39,5 +39,19 @@ describe('validateStory', () => {
     story = updateNode(story, startId, { text: 'The beginning.' })
     const issues = validateStory(story)
     expect(issues).toHaveLength(0)
+  })
+
+  it('warns about a condition or effect referencing a missing variable', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { text: 'The beginning.' })
+    story = addChoice(story, startId, 'Use a key')
+    const choiceId = story.nodes[startId].choices[0].id
+    story = setChoiceCondition(story, startId, choiceId, { variableId: 'missing-var', comparator: 'gte', value: 1 })
+    story = setChoiceEffects(story, startId, choiceId, [{ variableId: 'missing-var', op: 'add', value: 1 }])
+
+    const issues = validateStory(story)
+    expect(issues.some((i) => i.id === `bad-condition-${choiceId}`)).toBe(true)
+    expect(issues.some((i) => i.id === `bad-effect-${choiceId}-0`)).toBe(true)
   })
 })

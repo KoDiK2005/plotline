@@ -50,6 +50,28 @@ export function validateStory(story: Story): ValidationIssue[] {
         message: `Вариант «${choice.text || 'Без текста'}» в сцене «${node.title || 'Без названия'}» ни к чему не ведёт.`,
       })
     }
+
+    for (const choice of node.choices) {
+      const choiceLabel = `«${choice.text || 'Без текста'}» в сцене «${node.title || 'Без названия'}»`
+      if (choice.condition && !story.variables.some((v) => v.id === choice.condition!.variableId)) {
+        issues.push({
+          id: `bad-condition-${choice.id}`,
+          severity: 'warning',
+          nodeId: node.id,
+          message: `Условие у варианта ${choiceLabel} ссылается на несуществующую переменную.`,
+        })
+      }
+      choice.effects.forEach((effect, index) => {
+        if (!story.variables.some((v) => v.id === effect.variableId)) {
+          issues.push({
+            id: `bad-effect-${choice.id}-${index}`,
+            severity: 'warning',
+            nodeId: node.id,
+            message: `Эффект у варианта ${choiceLabel} ссылается на несуществующую переменную.`,
+          })
+        }
+      })
+    }
   }
 
   return issues

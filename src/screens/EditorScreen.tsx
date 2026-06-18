@@ -20,6 +20,7 @@ import { StatPill } from '../components/StatPill'
 import { IssuesPanel } from '../components/Editor/IssuesPanel'
 import { NodeInspector } from '../components/Editor/NodeInspector'
 import { SceneNode } from '../components/Editor/SceneNode'
+import { VariablesPanel } from '../components/Editor/VariablesPanel'
 import type { SceneNodeData } from '../engine/flowAdapters'
 import { storyToFlowEdges, storyToFlowNodes } from '../engine/flowAdapters'
 import { addNode, applyPositions, deleteNode, linkChoice, moveNode, updateMeta } from '../engine/storyOps'
@@ -45,6 +46,7 @@ function EditorScreenInner() {
   const [nodes, setNodes] = useNodesState<SceneNodeData>([])
   const [edges, setEdges] = useEdgesState<Edge>([])
   const [showIssues, setShowIssues] = useState(false)
+  const [showVariables, setShowVariables] = useState(false)
   const [confirmDeleteNodeId, setConfirmDeleteNodeId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -157,6 +159,9 @@ function EditorScreenInner() {
         >
           Авторасстановка
         </Button>
+        <Button variant="ghost" onClick={() => setShowVariables((v) => !v)}>
+          Переменные{story.variables.length > 0 ? ` (${story.variables.length})` : ''}
+        </Button>
         <Button variant="ghost" onClick={() => downloadJson(`${slugifyFilename(story.title)}.json`, story)}>
           Экспорт
         </Button>
@@ -166,6 +171,7 @@ function EditorScreenInner() {
       </header>
 
       {showIssues && <IssuesPanel issues={issues} onJumpToNode={jumpToNode} />}
+      {showVariables && <VariablesPanel story={story} onUpdate={mutate} />}
 
       <div className="flex flex-1 overflow-hidden">
         <div className="relative flex-1">

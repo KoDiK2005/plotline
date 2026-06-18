@@ -1,29 +1,72 @@
-import type { Choice, Story, StoryNode } from '../types/story'
+import type { Choice, ChoiceCondition, ChoiceEffect, Story, StoryNode, StoryVariable } from '../types/story'
 
-function isChoice(value: unknown): value is Choice {
+const COMPARATORS = new Set(['eq', 'neq', 'gt', 'gte', 'lt', 'lte'])
+
+function isChoiceCondition(value: unknown): value is ChoiceCondition {
   if (typeof value !== 'object' || value === null) return false
   const c = value as Record<string, unknown>
+  return typeof c.variableId === 'string' && typeof c.comparator === 'string' && COMPARATORS.has(c.comparator) && typeof c.value === 'number'
+}
+
+function isChoiceEffect(value: unknown): value is ChoiceEffect {
+  if (typeof value !== 'object' || value === null) return false
+  const e = value as Record<string, unknown>
   return (
-    typeof c.id === 'string' &&
-    typeof c.text === 'string' &&
-    (c.targetNodeId === null || typeof c.targetNodeId === 'string')
+    typeof e.variableId === 'string' && (e.op === 'set' || e.op === 'add') && typeof e.value === 'number'
   )
 }
 
-function isStoryNode(value: unknown): value is StoryNode {
+/** Parses a choice, defaulting condition/effects for files saved before that feature existed. */
+function parseChoice(value: unknown): Choice | null {
+  if (typeof value !== 'object' || value === null) return null
+  const c = value as Record<string, unknown>
+  if (typeof c.id !== 'string' || typeof c.text !== 'string' || !(c.targetNodeId === null || typeof c.targetNodeId === 'string')) {
+    return null
+  }
+  if (c.condition !== undefined && c.condition !== null && !isChoiceCondition(c.condition)) return null
+  if (c.effects !== undefined && !(Array.isArray(c.effects) && c.effects.every(isChoiceEffect))) return null
+
+  return {
+    id: c.id,
+    text: c.text,
+    targetNodeId: c.targetNodeId as string | null,
+    condition: (c.condition as ChoiceCondition | null | undefined) ?? null,
+    effects: (c.effects as ChoiceEffect[] | undefined) ?? [],
+  }
+}
+
+function isStoryVariable(value: unknown): value is StoryVariable {
   if (typeof value !== 'object' || value === null) return false
+  const v = value as Record<string, unknown>
+  return typeof v.id === 'string' && typeof v.name === 'string' && typeof v.initialValue === 'number'
+}
+
+function parseStoryNode(value: unknown): StoryNode | null {
+  if (typeof value !== 'object' || value === null) return null
   const n = value as Record<string, unknown>
-  return (
-    typeof n.id === 'string' &&
-    typeof n.title === 'string' &&
-    typeof n.text === 'string' &&
-    Array.isArray(n.choices) &&
-    n.choices.every(isChoice) &&
-    typeof n.position === 'object' &&
-    n.position !== null &&
-    typeof (n.position as Record<string, unknown>).x === 'number' &&
-    typeof (n.position as Record<string, unknown>).y === 'number'
-  )
+  if (
+    typeof n.id !== 'string' ||
+    typeof n.title !== 'string' ||
+    typeof n.text !== 'string' ||
+    !Array.isArray(n.choices) ||
+    typeof n.position !== 'object' ||
+    n.position === null ||
+    typeof (n.position as Record<string, unknown>).x !== 'number' ||
+    typeof (n.position as Record<string, unknown>).y !== 'number'
+  ) {
+    return null
+  }
+
+  const choices = n.choices.map(parseChoice)
+  if (choices.some((c) => c === null)) return null
+
+  return {
+    id: n.id,
+    title: n.title,
+    text: n.text,
+    choices: choices as Choice[],
+    position: n.position as { x: number; y: number },
+  }
 }
 
 /** Runtime guard for a full-library backup file ({ stories: Story[] }). */
@@ -53,10 +96,26 @@ export function parseStoryJson(data: unknown): Story | null {
     return null
   }
 
-  const nodes = s.nodes as Record<string, unknown>
-  for (const node of Object.values(nodes)) {
-    if (!isStoryNode(node)) return null
+  if (s.variables !== undefined && !(Array.isArray(s.variables) && s.variables.every(isStoryVariable))) {
+    return null
   }
 
-  return s as unknown as Story
+  const rawNodes = s.nodes as Record<string, unknown>
+  const nodes: Record<string, StoryNode> = {}
+  for (const [id, rawNode] of Object.entries(rawNodes)) {
+    const node = parseStoryNode(rawNode)
+    if (!node) return null
+    nodes[id] = node
+  }
+
+  return {
+    id: s.id,
+    title: s.title,
+    description: s.description,
+    startNodeId: s.startNodeId as string | null,
+    nodes,
+    variables: (s.variables as StoryVariable[] | undefined) ?? [],
+    createdAt: s.createdAt,
+    updatedAt: s.updatedAt,
+  }
 }

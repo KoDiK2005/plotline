@@ -31,7 +31,9 @@ export function SceneNode({ data, selected }: NodeProps<SceneNodeData>) {
       ) : (
         <div className="divide-y divide-slate-100 dark:divide-slate-800">
           {data.choices.map((choice) => (
-            <div key={choice.id} className="relative flex items-center px-3 py-1.5 pr-5 text-xs">
+            <div key={choice.id} className="relative flex items-center gap-1 px-3 py-1.5 pr-5 text-xs">
+              {choice.conditional && <span title="Есть условие">🔒</span>}
+              {choice.hasEffects && <span title="Меняет переменные">⚡</span>}
               <span
                 className={`truncate ${
                   choice.linked ? 'text-slate-700 dark:text-slate-300' : 'text-amber-600 dark:text-amber-400'

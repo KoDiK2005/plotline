@@ -5,7 +5,7 @@ export interface SceneNodeData {
   title: string
   text: string
   isStart: boolean
-  choices: { id: string; text: string; linked: boolean }[]
+  choices: { id: string; text: string; linked: boolean; conditional: boolean; hasEffects: boolean }[]
 }
 
 export function storyToFlowNodes(story: Story): Node<SceneNodeData>[] {
@@ -17,7 +17,13 @@ export function storyToFlowNodes(story: Story): Node<SceneNodeData>[] {
       title: node.title,
       text: node.text,
       isStart: node.id === story.startNodeId,
-      choices: node.choices.map((c) => ({ id: c.id, text: c.text, linked: c.targetNodeId !== null })),
+      choices: node.choices.map((c) => ({
+        id: c.id,
+        text: c.text,
+        linked: c.targetNodeId !== null,
+        conditional: c.condition !== null,
+        hasEffects: c.effects.length > 0,
+      })),
     },
   }))
 }
@@ -61,8 +67,9 @@ export function storyToFlowEdges(story: Story): Edge[] {
           sourceHandle: choice.id,
           target: choice.targetNodeId,
           targetHandle: 'target',
-          label: choice.text || '…',
+          label: choice.condition ? `🔒 ${choice.text || '…'}` : choice.text || '…',
           type: 'smoothstep',
+          style: choice.condition ? { strokeDasharray: '5 4' } : undefined,
         })
       }
     }

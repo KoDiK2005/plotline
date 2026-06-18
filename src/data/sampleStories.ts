@@ -1,7 +1,8 @@
-import type { Story, StoryNode } from '../types/story'
+import type { Choice, Story, StoryNode, StoryVariable } from '../types/story'
 import { autoLayoutPositions } from '../engine/traverse'
 
-type RawNode = Omit<StoryNode, 'position'>
+type RawChoice = Omit<Choice, 'condition' | 'effects'> & Partial<Pick<Choice, 'condition' | 'effects'>>
+type RawNode = Omit<StoryNode, 'position' | 'choices'> & { choices: RawChoice[] }
 
 function buildStory(
   id: string,
@@ -9,13 +10,18 @@ function buildStory(
   description: string,
   startNodeId: string,
   rawNodes: RawNode[],
+  variables: StoryVariable[] = [],
 ): Story {
   const nodes: Record<string, StoryNode> = {}
   for (const node of rawNodes) {
-    nodes[node.id] = { ...node, position: { x: 0, y: 0 } }
+    nodes[node.id] = {
+      ...node,
+      choices: node.choices.map((c) => ({ ...c, condition: c.condition ?? null, effects: c.effects ?? [] })),
+      position: { x: 0, y: 0 },
+    }
   }
   const now = Date.now()
-  const draft: Story = { id, title, description, startNodeId, nodes, createdAt: now, updatedAt: now }
+  const draft: Story = { id, title, description, startNodeId, nodes, variables, createdAt: now, updatedAt: now }
   const positions = autoLayoutPositions(draft)
   for (const nodeId of Object.keys(nodes)) {
     nodes[nodeId] = { ...nodes[nodeId], position: positions[nodeId] ?? { x: 0, y: 0 } }
@@ -220,4 +226,124 @@ const cafeStory = buildStory(
   ],
 )
 
-export const sampleStories: Story[] = [signalStory, cafeStory]
+const atticStory = buildStory(
+  'sample_attic',
+  'Ключ от чердака',
+  'Старый дом, запертая дверь и разные способы её открыть. Первая история с переменными и условными вариантами выбора — 4 концовки.',
+  'attic_start',
+  [
+    {
+      id: 'attic_start',
+      title: 'Чердак',
+      text:
+        'Дом, доставшийся от бабушки, наконец продан, но перед этим нужно разобрать чердак. В дальнем углу, за пыльными коробками, обнаруживается дверь, которой не было ни на одном плане дома. Замок старый, почти декоративный — и совершенно заперт.',
+      choices: [
+        { id: 'attic_c1', text: 'Поискать ключ в столе у окна', targetNodeId: 'attic_key' },
+        { id: 'attic_c2', text: 'Сразу попробовать вскрыть замок отмычкой', targetNodeId: 'attic_door' },
+        {
+          id: 'attic_c3',
+          text: 'Спросить соседку с третьего этажа, не знает ли она про эту дверь',
+          targetNodeId: 'attic_neighbor',
+          effects: [{ variableId: 'var_trust', op: 'add', value: 1 }],
+        },
+      ],
+    },
+    {
+      id: 'attic_key',
+      title: 'Ключ под письмами',
+      text:
+        'В нижнем ящике, под пачкой нераспечатанных писем, лежит маленький латунный ключ, обмотанный синей ниткой. На бирке выцветшими чернилами написано одно слово: «чердак». Кажется, бабушка хотела, чтобы его нашли — просто не успела сказать, кому.',
+      choices: [
+        {
+          id: 'attic_c4',
+          text: 'Пойти открыть дверь',
+          targetNodeId: 'attic_door',
+          effects: [{ variableId: 'var_key', op: 'set', value: 1 }],
+        },
+      ],
+    },
+    {
+      id: 'attic_neighbor',
+      title: 'Соседка с третьего этажа',
+      text:
+        'Соседка качает головой, но потом задумывается: «Ваша бабушка иногда поднималась туда вечерами, одна. Говорила, что там — её тихое место». Она протягивает старую масляную банку: «Замки в этом доме капризные, без масла не открыть».',
+      choices: [
+        { id: 'attic_c5', text: 'Поблагодарить и вернуться к двери', targetNodeId: 'attic_door' },
+        {
+          id: 'attic_c6',
+          text: 'Спросить, что ещё она помнит про бабушку',
+          targetNodeId: 'attic_history',
+          effects: [{ variableId: 'var_trust', op: 'add', value: 1 }],
+        },
+      ],
+    },
+    {
+      id: 'attic_history',
+      title: 'Истории за чаем',
+      text:
+        'За чашкой чая соседка вспоминает куда больше, чем кажется: вечерние шаги по лестнице, свет, который горел на чердаке до рассвета, и то, как бабушка однажды попросила никому не отдавать ключ от той двери, если что-то случится. «Берегите это место», — говорит она напоследок.',
+      choices: [{ id: 'attic_c7', text: 'Вернуться к двери', targetNodeId: 'attic_door' }],
+    },
+    {
+      id: 'attic_door',
+      title: 'Дверь чердака',
+      text:
+        'Замок смотрит на вас так же упорно, как час назад. Где-то за этой дверью — последнее, что осталось от бабушкиных вечеров в одиночестве, и способ войти туда у каждого свой.',
+      choices: [
+        {
+          id: 'attic_c8',
+          text: 'Тихо открыть найденным ключом',
+          targetNodeId: 'attic_end_archive',
+          condition: { variableId: 'var_key', comparator: 'gte', value: 1 },
+        },
+        {
+          id: 'attic_c9',
+          text: 'Позвать соседку — вдвоём с капризным замком разобраться проще',
+          targetNodeId: 'attic_end_together',
+          condition: { variableId: 'var_trust', comparator: 'gte', value: 2 },
+        },
+        {
+          id: 'attic_c10',
+          text: 'Использовать масло от соседки, чтобы поддеть замок',
+          targetNodeId: 'attic_end_lucky',
+          condition: { variableId: 'var_trust', comparator: 'eq', value: 1 },
+        },
+        { id: 'attic_c11', text: 'Выломать дверь силой', targetNodeId: 'attic_end_broken' },
+      ],
+    },
+    {
+      id: 'attic_end_archive',
+      title: 'Бабушкин архив',
+      text:
+        'Ключ поворачивается неожиданно легко. За дверью — маленькая комната с одним креслом, лампой и стопкой исписанных от руки тетрадей. Это не тайна и не сокровище — просто тихое место, которое бабушка хотела сохранить, и теперь оно остаётся вашим.',
+      choices: [],
+    },
+    {
+      id: 'attic_end_together',
+      title: 'Вместе',
+      text:
+        'Замок поддаётся не ключу и не силе, а времени, которое вы оба готовы на него потратить. Соседка улыбается, увидев комнату: «Я так и думала, что здесь что-то особенное». Тайна бабушкиного чердака перестаёт быть только вашей — и от этого почему-то легче.',
+      choices: [],
+    },
+    {
+      id: 'attic_end_lucky',
+      title: 'Счастливая случайность',
+      text:
+        'Масло и немного терпения делают то, что не смогли ни ключ, ни сила. Замок щёлкает, дверь приоткрывается — и среди пыли обнаруживается именно то тихое место, о котором говорила соседка. Иногда удача — это просто чужой совет, использованный вовремя.',
+      choices: [],
+    },
+    {
+      id: 'attic_end_broken',
+      title: 'Сорванный замок',
+      text:
+        'Дверь поддаётся с громким треском, отлетевшая щепка задевает щёку. За дверью — то же самое тихое место, но войти в него вот так почему-то кажется неправильным. Бабушкины тетради на полу выглядят беззащитными под ярким светом фонарика.',
+      choices: [],
+    },
+  ],
+  [
+    { id: 'var_key', name: 'Есть ключ', initialValue: 0 },
+    { id: 'var_trust', name: 'Доверие соседки', initialValue: 0 },
+  ],
+)
+
+export const sampleStories: Story[] = [signalStory, cafeStory, atticStory]

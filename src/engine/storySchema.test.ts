@@ -41,6 +41,43 @@ describe('parseStoryJson', () => {
     }
     expect(parseStoryJson(broken)).toBeNull()
   })
+
+  it('accepts a story saved before variables/conditions/effects existed', () => {
+    const story = createStory('Legacy')
+    const nodeId = Object.keys(story.nodes)[0]
+    const { variables, ...storyWithoutVariables } = story
+    const legacy = {
+      ...storyWithoutVariables,
+      nodes: {
+        [nodeId]: {
+          ...story.nodes[nodeId],
+          choices: [{ id: 'c1', text: 'Go', targetNodeId: null }],
+        },
+      },
+    }
+    void variables
+    const parsed = parseStoryJson(legacy)
+    expect(parsed).not.toBeNull()
+    expect(parsed!.variables).toEqual([])
+    expect(parsed!.nodes[nodeId].choices[0].condition).toBeNull()
+    expect(parsed!.nodes[nodeId].choices[0].effects).toEqual([])
+  })
+
+  it('rejects a choice with a malformed condition', () => {
+    const story = createStory('Test')
+    const nodeId = Object.keys(story.nodes)[0]
+    const broken = {
+      ...story,
+      nodes: {
+        ...story.nodes,
+        [nodeId]: {
+          ...story.nodes[nodeId],
+          choices: [{ id: 'c1', text: 'x', targetNodeId: null, condition: { variableId: 'v1', comparator: 'huh', value: 1 } }],
+        },
+      },
+    }
+    expect(parseStoryJson(broken)).toBeNull()
+  })
 })
 
 describe('parseLibraryBackup', () => {

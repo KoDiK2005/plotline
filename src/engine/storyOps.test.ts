@@ -2,13 +2,18 @@ import { describe, expect, it } from 'vitest'
 import {
   addChoice,
   addNode,
+  addVariable,
   createStory,
   deleteChoice,
   deleteNode,
+  deleteVariable,
   linkChoice,
+  setChoiceCondition,
+  setChoiceEffects,
   setStartNode,
   updateChoiceText,
   updateNode,
+  updateVariable,
 } from './storyOps'
 
 describe('createStory', () => {
@@ -114,5 +119,67 @@ describe('setStartNode', () => {
 
     const unchanged = setStartNode(story, 'missing')
     expect(unchanged.startNodeId).toBe(secondId)
+  })
+})
+
+describe('variables', () => {
+  it('adds, renames and deletes a variable', () => {
+    let story = createStory()
+    const { story: withVar, variableId } = addVariable(story, 'Trust', 0)
+    story = withVar
+    expect(story.variables).toHaveLength(1)
+
+    story = updateVariable(story, variableId, { initialValue: 2 })
+    expect(story.variables[0].initialValue).toBe(2)
+
+    story = deleteVariable(story, variableId)
+    expect(story.variables).toHaveLength(0)
+  })
+
+  it('clears choice conditions and effects that reference a deleted variable', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    const { story: withVar, variableId } = addVariable(story, 'Key', 0)
+    story = withVar
+    story = addChoice(story, startId, 'Use key')
+    const choiceId = story.nodes[startId].choices[0].id
+    story = setChoiceCondition(story, startId, choiceId, { variableId, comparator: 'gte', value: 1 })
+    story = setChoiceEffects(story, startId, choiceId, [{ variableId, op: 'set', value: 1 }])
+
+    story = deleteVariable(story, variableId)
+    expect(story.nodes[startId].choices[0].condition).toBeNull()
+    expect(story.nodes[startId].choices[0].effects).toEqual([])
+  })
+})
+
+describe('setChoiceCondition / setChoiceEffects', () => {
+  it('sets and clears a choice condition', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    const { story: withVar, variableId } = addVariable(story, 'Trust', 0)
+    story = withVar
+    story = addChoice(story, startId, 'Ask for help')
+    const choiceId = story.nodes[startId].choices[0].id
+
+    story = setChoiceCondition(story, startId, choiceId, { variableId, comparator: 'eq', value: 1 })
+    expect(story.nodes[startId].choices[0].condition).toEqual({ variableId, comparator: 'eq', value: 1 })
+
+    story = setChoiceCondition(story, startId, choiceId, null)
+    expect(story.nodes[startId].choices[0].condition).toBeNull()
+  })
+
+  it('replaces the effects list for a choice', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    const { story: withVar, variableId } = addVariable(story, 'Trust', 0)
+    story = withVar
+    story = addChoice(story, startId, 'Help out')
+    const choiceId = story.nodes[startId].choices[0].id
+
+    story = setChoiceEffects(story, startId, choiceId, [{ variableId, op: 'add', value: 1 }])
+    expect(story.nodes[startId].choices[0].effects).toEqual([{ variableId, op: 'add', value: 1 }])
+
+    story = setChoiceEffects(story, startId, choiceId, [])
+    expect(story.nodes[startId].choices[0].effects).toEqual([])
   })
 })

@@ -1,6 +1,24 @@
-import type { Story } from '../../types/story'
-import { addChoice, deleteChoice, linkChoice, setStartNode, updateChoiceText, updateNode } from '../../engine/storyOps'
+import type { Comparator, Story } from '../../types/story'
+import {
+  addChoice,
+  deleteChoice,
+  linkChoice,
+  setChoiceCondition,
+  setChoiceEffects,
+  setStartNode,
+  updateChoiceText,
+  updateNode,
+} from '../../engine/storyOps'
 import { Button } from '../Button'
+
+const COMPARATOR_LABELS: Record<Comparator, string> = {
+  eq: '=',
+  neq: '≠',
+  gt: '>',
+  gte: '≥',
+  lt: '<',
+  lte: '≤',
+}
 
 interface NodeInspectorProps {
   story: Story
@@ -101,6 +119,161 @@ export function NodeInspector({ story, nodeId, onUpdate, onClose, onRequestDelet
                   ✕
                 </Button>
               </div>
+
+              {story.variables.length > 0 && (
+                <div className="mt-2 flex flex-col gap-1.5 border-t border-slate-100 pt-2 dark:border-slate-800">
+                  <div className="flex items-center gap-1 text-xs">
+                    <span className="w-14 shrink-0 text-[10px] uppercase text-slate-400">Условие</span>
+                    <select
+                      value={choice.condition?.variableId ?? ''}
+                      onChange={(e) =>
+                        onUpdate((s) =>
+                          setChoiceCondition(
+                            s,
+                            nodeId,
+                            choice.id,
+                            e.target.value ? { variableId: e.target.value, comparator: 'gte', value: 1 } : null,
+                          ),
+                        )
+                      }
+                      className={`${fieldClass} flex-1 py-1 text-xs`}
+                    >
+                      <option value="">— нет —</option>
+                      {story.variables.map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {v.name}
+                        </option>
+                      ))}
+                    </select>
+                    {choice.condition && (
+                      <>
+                        <select
+                          value={choice.condition.comparator}
+                          onChange={(e) =>
+                            onUpdate((s) =>
+                              setChoiceCondition(s, nodeId, choice.id, {
+                                ...choice.condition!,
+                                comparator: e.target.value as Comparator,
+                              }),
+                            )
+                          }
+                          className={`${fieldClass} py-1 text-xs`}
+                        >
+                          {Object.entries(COMPARATOR_LABELS).map(([key, label]) => (
+                            <option key={key} value={key}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          type="number"
+                          value={choice.condition.value}
+                          onChange={(e) =>
+                            onUpdate((s) =>
+                              setChoiceCondition(s, nodeId, choice.id, {
+                                ...choice.condition!,
+                                value: Number(e.target.value) || 0,
+                              }),
+                            )
+                          }
+                          className={`${fieldClass} w-14 py-1 text-xs`}
+                        />
+                      </>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] uppercase text-slate-400">Эффекты</span>
+                      <button
+                        onClick={() =>
+                          onUpdate((s) =>
+                            setChoiceEffects(s, nodeId, choice.id, [
+                              ...choice.effects,
+                              { variableId: story.variables[0].id, op: 'set', value: 1 },
+                            ]),
+                          )
+                        }
+                        className="text-xs font-medium text-violet-600 hover:underline dark:text-violet-400"
+                      >
+                        + эффект
+                      </button>
+                    </div>
+                    {choice.effects.map((effect, index) => (
+                      <div key={index} className="flex items-center gap-1 text-xs">
+                        <select
+                          value={effect.variableId}
+                          onChange={(e) =>
+                            onUpdate((s) =>
+                              setChoiceEffects(
+                                s,
+                                nodeId,
+                                choice.id,
+                                choice.effects.map((eff, i) =>
+                                  i === index ? { ...eff, variableId: e.target.value } : eff,
+                                ),
+                              ),
+                            )
+                          }
+                          className={`${fieldClass} flex-1 py-1 text-xs`}
+                        >
+                          {story.variables.map((v) => (
+                            <option key={v.id} value={v.id}>
+                              {v.name}
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          value={effect.op}
+                          onChange={(e) =>
+                            onUpdate((s) =>
+                              setChoiceEffects(
+                                s,
+                                nodeId,
+                                choice.id,
+                                choice.effects.map((eff, i) =>
+                                  i === index ? { ...eff, op: e.target.value as 'set' | 'add' } : eff,
+                                ),
+                              ),
+                            )
+                          }
+                          className={`${fieldClass} py-1 text-xs`}
+                        >
+                          <option value="set">=</option>
+                          <option value="add">+=</option>
+                        </select>
+                        <input
+                          type="number"
+                          value={effect.value}
+                          onChange={(e) =>
+                            onUpdate((s) =>
+                              setChoiceEffects(
+                                s,
+                                nodeId,
+                                choice.id,
+                                choice.effects.map((eff, i) =>
+                                  i === index ? { ...eff, value: Number(e.target.value) || 0 } : eff,
+                                ),
+                              ),
+                            )
+                          }
+                          className={`${fieldClass} w-14 py-1 text-xs`}
+                        />
+                        <button
+                          onClick={() =>
+                            onUpdate((s) =>
+                              setChoiceEffects(s, nodeId, choice.id, choice.effects.filter((_, i) => i !== index)),
+                            )
+                          }
+                          className="px-1 text-red-500 hover:text-red-600"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ))}
           {node.choices.length === 0 && (
