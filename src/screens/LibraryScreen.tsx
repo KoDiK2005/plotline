@@ -3,10 +3,11 @@ import { Button } from '../components/Button'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { StoryCard } from '../components/StoryCard'
 import { ThemeToggle } from '../components/ThemeToggle'
+import { buildStandaloneHtml } from '../engine/exportHtml'
 import { parseLibraryBackup, parseStoryJson } from '../engine/storySchema'
 import { useLibraryStore } from '../store/useLibraryStore'
 import { useUIStore } from '../store/useUIStore'
-import { downloadJson, readJsonFile, slugifyFilename } from '../utils/file'
+import { downloadJson, downloadText, readJsonFile, slugifyFilename } from '../utils/file'
 
 export function LibraryScreen() {
   const stories = useLibraryStore((s) => s.stories)
@@ -120,6 +121,7 @@ export function LibraryScreen() {
               onEdit={() => openEditor(story.id)}
               onDuplicate={() => duplicateStory(story.id)}
               onExport={() => downloadJson(`${slugifyFilename(story.title)}.json`, story)}
+              onExportHtml={() => downloadText(`${slugifyFilename(story.title)}.html`, buildStandaloneHtml(story), 'text/html')}
               onDelete={() => setPendingDeleteId(story.id)}
             />
           ))}

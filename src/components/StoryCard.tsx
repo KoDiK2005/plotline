@@ -10,10 +10,11 @@ interface StoryCardProps {
   onEdit: () => void
   onDuplicate: () => void
   onExport: () => void
+  onExportHtml: () => void
   onDelete: () => void
 }
 
-export function StoryCard({ story, onPlay, onEdit, onDuplicate, onExport, onDelete }: StoryCardProps) {
+export function StoryCard({ story, onPlay, onEdit, onDuplicate, onExport, onExportHtml, onDelete }: StoryCardProps) {
   const stats = getStoryStats(story)
   const progress = useProgressStore((s) => s.getProgress(story.id))
 
@@ -48,7 +49,10 @@ export function StoryCard({ story, onPlay, onEdit, onDuplicate, onExport, onDele
           Дублировать
         </Button>
         <Button variant="ghost" className="flex-1 px-2 py-1 text-xs" onClick={onExport}>
-          Экспорт
+          JSON
+        </Button>
+        <Button variant="ghost" className="flex-1 px-2 py-1 text-xs" onClick={onExportHtml} title="Скачать как самостоятельную HTML-страницу">
+          HTML
         </Button>
         <Button variant="ghost" className="flex-1 px-2 py-1 text-xs text-red-500" onClick={onDelete}>
           Удалить
