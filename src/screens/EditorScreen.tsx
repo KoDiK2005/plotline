@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ReactFlow, {
   Background,
   Controls,
@@ -33,6 +33,9 @@ import type { Story } from '../types/story'
 
 const nodeTypes = { scene: SceneNode }
 
+// Rapid edits within this window (e.g. typing in a text field) collapse into a single undo step.
+const HISTORY_GROUP_MS = 600
+
 function EditorScreenInner() {
   const currentStoryId = useUIStore((s) => s.currentStoryId)
   const selectedNodeId = useUIStore((s) => s.selectedNodeId)
@@ -49,6 +52,10 @@ function EditorScreenInner() {
   const [showVariables, setShowVariables] = useState(false)
   const [confirmDeleteNodeId, setConfirmDeleteNodeId] = useState<string | null>(null)
 
+  const [past, setPast] = useState<Story[]>([])
+  const [future, setFuture] = useState<Story[]>([])
+  const lastMutationAtRef = useRef(0)
+
   useEffect(() => {
     if (!story) return
     setNodes(storyToFlowNodes(story))
@@ -61,10 +68,58 @@ function EditorScreenInner() {
 
   const mutate = useCallback(
     (updater: (s: Story) => Story) => {
-      if (currentStoryId) updateStory(currentStoryId, updater)
+      if (!currentStoryId) return
+      const current = useLibraryStore.getState().stories[currentStoryId]
+      if (!current) return
+      const now = Date.now()
+      if (now - lastMutationAtRef.current > HISTORY_GROUP_MS) {
+        setPast((p) => [...p, current])
+        setFuture([])
+      }
+      lastMutationAtRef.current = now
+      updateStory(currentStoryId, updater)
     },
     [currentStoryId, updateStory],
   )
+
+  const undo = useCallback(() => {
+    if (!currentStoryId || past.length === 0) return
+    const current = useLibraryStore.getState().stories[currentStoryId]
+    if (!current) return
+    const previous = past[past.length - 1]
+    setPast(past.slice(0, -1))
+    setFuture([current, ...future])
+    lastMutationAtRef.current = 0
+    updateStory(currentStoryId, () => previous)
+  }, [currentStoryId, past, future, updateStory])
+
+  const redo = useCallback(() => {
+    if (!currentStoryId || future.length === 0) return
+    const current = useLibraryStore.getState().stories[currentStoryId]
+    if (!current) return
+    const next = future[0]
+    setFuture(future.slice(1))
+    setPast([...past, current])
+    lastMutationAtRef.current = 0
+    updateStory(currentStoryId, () => next)
+  }, [currentStoryId, future, past, updateStory])
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const target = e.target as HTMLElement | null
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return
+      if (!(e.ctrlKey || e.metaKey)) return
+      if (e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        e.preventDefault()
+        undo()
+      } else if (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey)) {
+        e.preventDefault()
+        redo()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [undo, redo])
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
@@ -121,10 +176,17 @@ function EditorScreenInner() {
 
   function handleAddNode() {
     const count = Object.keys(currentStory.nodes).length
-    const { story: nextStory, nodeId } = addNode(currentStory, { x: 40 * count, y: 40 * count })
-    updateStory(currentStory.id, () => nextStory)
-    selectNode(nodeId)
+    let newNodeId = ''
+    mutate((s) => {
+      const { story: nextStory, nodeId } = addNode(s, { x: 40 * count, y: 40 * count })
+      newNodeId = nodeId
+      return nextStory
+    })
+    selectNode(newNodeId)
   }
+
+  const canUndo = past.length > 0
+  const canRedo = future.length > 0
 
   return (
     <div className="flex h-screen flex-col">
@@ -140,6 +202,14 @@ function EditorScreenInner() {
         <div className="hidden gap-1.5 sm:flex">
           <StatPill label="сцен" value={stats.nodeCount} />
           <StatPill label="концовок" value={stats.endingCount} />
+        </div>
+        <div className="flex gap-1">
+          <Button variant="ghost" disabled={!canUndo} onClick={undo} title="Отменить (Ctrl+Z)">
+            ↶
+          </Button>
+          <Button variant="ghost" disabled={!canRedo} onClick={redo} title="Повторить (Ctrl+Shift+Z)">
+            ↷
+          </Button>
         </div>
         <button
           onClick={() => setShowIssues((v) => !v)}
