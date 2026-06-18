@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import { AchievementsPanel } from '../components/AchievementsPanel'
 import { Button } from '../components/Button'
 import { ConfirmDialog } from '../components/ConfirmDialog'
+import { NewStoryDialog } from '../components/NewStoryDialog'
 import { StoryCard } from '../components/StoryCard'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { computeAchievements } from '../engine/achievements'
@@ -29,6 +30,7 @@ export function LibraryScreen() {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [showAchievements, setShowAchievements] = useState(false)
+  const [showNewStory, setShowNewStory] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const achievements = useMemo(
@@ -129,7 +131,7 @@ export function LibraryScreen() {
           >
             Экспортировать всё
           </Button>
-          <Button variant="primary" onClick={() => openEditor(createStory())}>
+          <Button variant="primary" onClick={() => setShowNewStory(true)}>
             + Новая история
           </Button>
         </div>
@@ -185,6 +187,16 @@ export function LibraryScreen() {
 
       {showAchievements && (
         <AchievementsPanel achievements={achievements} onClose={() => setShowAchievements(false)} />
+      )}
+
+      {showNewStory && (
+        <NewStoryDialog
+          onCancel={() => setShowNewStory(false)}
+          onCreate={(title, templateId) => {
+            setShowNewStory(false)
+            openEditor(createStory(title, templateId))
+          }}
+        />
       )}
     </div>
   )

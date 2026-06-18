@@ -3,10 +3,11 @@ import { persist } from 'zustand/middleware'
 import type { Story } from '../types/story'
 import { sampleStories } from '../data/sampleStories'
 import * as ops from '../engine/storyOps'
+import { buildFromTemplate, type TemplateId } from '../engine/templates'
 
 interface LibraryState {
   stories: Record<string, Story>
-  createStory: (title?: string) => string
+  createStory: (title?: string, templateId?: TemplateId) => string
   deleteStory: (id: string) => void
   duplicateStory: (id: string) => string | null
   importStory: (story: Story) => string
@@ -23,8 +24,10 @@ export const useLibraryStore = create<LibraryState>()(
     (set, get) => ({
       stories: sampleStoriesRecord(),
 
-      createStory: (title) => {
-        const story = ops.createStory(title)
+      createStory: (title, templateId) => {
+        const story = templateId
+          ? buildFromTemplate(templateId, title ?? 'Новая история')
+          : ops.createStory(title)
         set((state) => ({ stories: { ...state.stories, [story.id]: story } }))
         return story.id
       },

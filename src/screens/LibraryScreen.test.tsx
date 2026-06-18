@@ -68,13 +68,16 @@ describe('LibraryScreen', () => {
     expect(screen.queryByText('Сигнал из глубины')).not.toBeInTheDocument()
   })
 
-  it('creates a new story and opens the editor when "+ Новая история" is clicked', async () => {
+  it('opens the new-story dialog, then creates a blank story and opens the editor on confirm', async () => {
     const user = userEvent.setup()
     render(<LibraryScreen />)
 
     const storyCountBefore = Object.keys(useLibraryStore.getState().stories).length
 
     await user.click(screen.getByRole('button', { name: '+ Новая история' }))
+    const dialog = screen.getByRole('dialog')
+    await user.type(within(dialog).getByLabelText('Название'), 'Моя история')
+    await user.click(within(dialog).getByRole('button', { name: 'Создать' }))
 
     const stories = useLibraryStore.getState().stories
     expect(Object.keys(stories).length).toBe(storyCountBefore + 1)
@@ -82,7 +85,38 @@ describe('LibraryScreen', () => {
     const uiState = useUIStore.getState()
     expect(uiState.view).toBe('editor')
     expect(uiState.currentStoryId).not.toBeNull()
-    expect(stories[uiState.currentStoryId!]).toBeDefined()
+    const created = stories[uiState.currentStoryId!]
+    expect(created).toBeDefined()
+    expect(created.title).toBe('Моя история')
+    expect(Object.keys(created.nodes)).toHaveLength(1)
+  })
+
+  it('creates a story from the "Детектив" template with its pre-built scenes', async () => {
+    const user = userEvent.setup()
+    render(<LibraryScreen />)
+
+    await user.click(screen.getByRole('button', { name: '+ Новая история' }))
+    const dialog = screen.getByRole('dialog')
+    await user.click(within(dialog).getByText('Детектив'))
+    await user.click(within(dialog).getByRole('button', { name: 'Создать' }))
+
+    const uiState = useUIStore.getState()
+    const created = useLibraryStore.getState().stories[uiState.currentStoryId!]
+    expect(Object.keys(created.nodes)).toHaveLength(4)
+  })
+
+  it('closes the new-story dialog via cancel without creating a story', async () => {
+    const user = userEvent.setup()
+    render(<LibraryScreen />)
+
+    const storyCountBefore = Object.keys(useLibraryStore.getState().stories).length
+
+    await user.click(screen.getByRole('button', { name: '+ Новая история' }))
+    await user.click(screen.getByRole('button', { name: 'Отмена' }))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(Object.keys(useLibraryStore.getState().stories).length).toBe(storyCountBefore)
+    expect(useUIStore.getState().view).toBe('library')
   })
 
   it('opens a ConfirmDialog when a story\'s "Удалить" button is clicked, and removes the story on confirm', async () => {
