@@ -160,4 +160,20 @@ describe('LibraryScreen', () => {
       await screen.findByText('Файл не похож на историю Plotline: проверьте, что это экспортированный JSON.'),
     ).toBeInTheDocument()
   })
+
+  it('opens and closes the achievements panel from the header button', async () => {
+    const user = userEvent.setup()
+    render(<LibraryScreen />)
+
+    await user.click(screen.getByRole('button', { name: /Достижения/ }))
+
+    expect(screen.getByRole('heading', { name: /Достижения · \d+\/\d+/ })).toBeInTheDocument()
+    expect(screen.getByText('Создайте свою собственную историю.')).toBeInTheDocument()
+
+    // The panel renders both an icon "✕" button (aria-label "Закрыть") and a text "Закрыть" button.
+    const closeButtons = screen.getAllByRole('button', { name: 'Закрыть' })
+    await user.click(closeButtons[closeButtons.length - 1])
+
+    expect(screen.queryByRole('heading', { name: /Достижения · \d+\/\d+/ })).not.toBeInTheDocument()
+  })
 })

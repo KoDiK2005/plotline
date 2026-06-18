@@ -1,11 +1,14 @@
 import { useMemo, useRef, useState } from 'react'
+import { AchievementsPanel } from '../components/AchievementsPanel'
 import { Button } from '../components/Button'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { StoryCard } from '../components/StoryCard'
 import { ThemeToggle } from '../components/ThemeToggle'
+import { computeAchievements } from '../engine/achievements'
 import { buildStandaloneHtml } from '../engine/exportHtml'
 import { parseLibraryBackup, parseStoryJson } from '../engine/storySchema'
 import { useLibraryStore } from '../store/useLibraryStore'
+import { useProgressStore } from '../store/useProgressStore'
 import { useUIStore } from '../store/useUIStore'
 import { downloadJson, downloadText, readJsonFile, slugifyFilename } from '../utils/file'
 
@@ -15,13 +18,21 @@ export function LibraryScreen() {
   const deleteStory = useLibraryStore((s) => s.deleteStory)
   const duplicateStory = useLibraryStore((s) => s.duplicateStory)
   const importStory = useLibraryStore((s) => s.importStory)
+  const progress = useProgressStore((s) => s.progress)
   const openEditor = useUIStore((s) => s.openEditor)
   const openPlayer = useUIStore((s) => s.openPlayer)
 
   const [query, setQuery] = useState('')
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [showAchievements, setShowAchievements] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const achievements = useMemo(
+    () => computeAchievements(Object.values(stories), progress),
+    [stories, progress],
+  )
+  const unlockedCount = achievements.filter((a) => a.unlocked).length
 
   const storyList = useMemo(
     () =>
@@ -60,7 +71,12 @@ export function LibraryScreen() {
             Сочиняйте ветвящиеся истории и проходите их сами.
           </p>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" onClick={() => setShowAchievements(true)}>
+            🏆 Достижения · {unlockedCount}/{achievements.length}
+          </Button>
+          <ThemeToggle />
+        </div>
       </div>
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -138,6 +154,10 @@ export function LibraryScreen() {
             setPendingDeleteId(null)
           }}
         />
+      )}
+
+      {showAchievements && (
+        <AchievementsPanel achievements={achievements} onClose={() => setShowAchievements(false)} />
       )}
     </div>
   )
