@@ -17,6 +17,7 @@ import ReactFlow, {
 import { Button } from '../components/Button'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { StatPill } from '../components/StatPill'
+import { FindReplacePanel } from '../components/Editor/FindReplacePanel'
 import { IssuesPanel } from '../components/Editor/IssuesPanel'
 import { NodeInspector } from '../components/Editor/NodeInspector'
 import { PreviewPanel } from '../components/Editor/PreviewPanel'
@@ -51,6 +52,7 @@ function EditorScreenInner() {
   const [edges, setEdges] = useEdgesState<Edge>([])
   const [showIssues, setShowIssues] = useState(false)
   const [showVariables, setShowVariables] = useState(false)
+  const [showFindReplace, setShowFindReplace] = useState(false)
   const [confirmDeleteNodeId, setConfirmDeleteNodeId] = useState<string | null>(null)
   const [previewNodeId, setPreviewNodeId] = useState<string | null>(null)
 
@@ -240,6 +242,9 @@ function EditorScreenInner() {
         <Button variant="ghost" onClick={() => setShowVariables((v) => !v)}>
           Переменные{story.variables.length > 0 ? ` (${story.variables.length})` : ''}
         </Button>
+        <Button variant="ghost" onClick={() => setShowFindReplace((v) => !v)}>
+          🔍 Найти и заменить
+        </Button>
         <Button variant="ghost" onClick={() => downloadJson(`${slugifyFilename(story.title)}.json`, story)}>
           Экспорт
         </Button>
@@ -250,6 +255,7 @@ function EditorScreenInner() {
 
       {showIssues && <IssuesPanel issues={issues} onJumpToNode={jumpToNode} />}
       {showVariables && <VariablesPanel story={story} onUpdate={mutate} />}
+      {showFindReplace && <FindReplacePanel story={story} onUpdate={mutate} onJumpToNode={jumpToNode} />}
 
       <div className="flex flex-1 overflow-hidden">
         <div className="relative flex-1">

@@ -223,4 +223,24 @@ describe('EditorScreen', () => {
 
     expect(useLibraryStore.getState().stories[story.id].variables).toHaveLength(1)
   })
+
+  it('opens the find & replace panel and replaces text across the story in one undo step', async () => {
+    let story = createStory('Edit Me')
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { title: 'Лесная тропа', text: 'Герой видит волка.' })
+    setupStory(story)
+    const user = userEvent.setup()
+    render(<EditorScreen />)
+
+    await user.click(screen.getByRole('button', { name: '🔍 Найти и заменить' }))
+    await user.type(screen.getByLabelText('Найти'), 'волк')
+    await user.type(screen.getByLabelText('Заменить на'), 'медведь')
+    await user.click(screen.getByRole('button', { name: /Заменить всё/ }))
+
+    expect(useLibraryStore.getState().stories[story.id].nodes[startId].text).toBe('Герой видит медведьа.')
+
+    const undoButton = screen.getByTitle('Отменить (Ctrl+Z)')
+    await user.click(undoButton)
+    expect(useLibraryStore.getState().stories[story.id].nodes[startId].text).toBe('Герой видит волка.')
+  })
 })
