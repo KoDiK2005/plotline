@@ -136,6 +136,25 @@ describe('variables', () => {
     expect(story.variables).toHaveLength(0)
   })
 
+  it('defaults a new variable to type "number" and accepts an explicit type', () => {
+    let story = createStory()
+    const { story: withDefault, variableId: defaultId } = addVariable(story, 'Score', 0)
+    story = withDefault
+    expect(story.variables.find((v) => v.id === defaultId)?.type).toBe('number')
+
+    const { story: withBoolean, variableId: boolId } = addVariable(story, 'Has Key', 0, 'boolean')
+    story = withBoolean
+    expect(story.variables.find((v) => v.id === boolId)?.type).toBe('boolean')
+  })
+
+  it('changes a variable type via updateVariable', () => {
+    let story = createStory()
+    const { story: withVar, variableId } = addVariable(story, 'Has Key', 0, 'number')
+    story = withVar
+    story = updateVariable(story, variableId, { type: 'boolean' })
+    expect(story.variables[0].type).toBe('boolean')
+  })
+
   it('clears choice conditions and effects that reference a deleted variable', () => {
     let story = createStory()
     const startId = story.startNodeId!

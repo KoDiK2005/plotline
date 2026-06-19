@@ -224,6 +224,37 @@ describe('EditorScreen', () => {
     expect(useLibraryStore.getState().stories[story.id].variables).toHaveLength(1)
   })
 
+  it('switches a variable to Да/Нет and simplifies the choice condition built on it', async () => {
+    let story = createStory('Edit Me')
+    const startId = story.startNodeId!
+    story = addChoice(story, startId, 'Открыть дверь')
+    setupStory(story)
+    const user = userEvent.setup()
+    render(<EditorScreen />)
+
+    await user.click(screen.getByRole('button', { name: 'Переменные' }))
+    await user.click(screen.getByRole('button', { name: '+ Добавить' }))
+    await user.selectOptions(screen.getByLabelText('Тип переменной'), 'boolean')
+
+    expect(screen.getByLabelText('Начальное значение')).toHaveDisplayValue('Нет')
+
+    useUIStore.getState().selectNode(startId)
+    await screen.findByRole('heading', { name: 'Сцена' })
+
+    const variableId = useLibraryStore.getState().stories[story.id].variables[0].id
+    await user.selectOptions(screen.getByLabelText('Переменная условия'), variableId)
+
+    expect(screen.queryByLabelText('Сравнение')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Значение условия')).toHaveDisplayValue('Да')
+
+    const updatedStory = useLibraryStore.getState().stories[story.id]
+    expect(updatedStory.nodes[startId].choices[0].condition).toEqual({
+      variableId,
+      comparator: 'eq',
+      value: 1,
+    })
+  })
+
   it('opens the find & replace panel and replaces text across the story in one undo step', async () => {
     let story = createStory('Edit Me')
     const startId = story.startNodeId!

@@ -1,4 +1,4 @@
-import type { Comparator, Story } from '../../types/story'
+import type { Comparator, Story, VariableType } from '../../types/story'
 import {
   addChoice,
   deleteChoice,
@@ -39,6 +39,10 @@ export function NodeInspector({ story, nodeId, onUpdate, onClose, onRequestDelet
 
   const isStart = story.startNodeId === nodeId
   const otherNodes = Object.values(story.nodes).filter((n) => n.id !== nodeId)
+
+  function variableType(variableId: string): VariableType {
+    return story.variables.find((v) => v.id === variableId)?.type ?? 'number'
+  }
 
   return (
     <aside className="flex w-80 shrink-0 flex-col gap-4 overflow-y-auto border-l border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
@@ -140,16 +144,21 @@ export function NodeInspector({ story, nodeId, onUpdate, onClose, onRequestDelet
                     <span className="w-14 shrink-0 text-[10px] uppercase text-slate-400">Условие</span>
                     <select
                       value={choice.condition?.variableId ?? ''}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const newVariableId = e.target.value
+                        if (!newVariableId) {
+                          onUpdate((s) => setChoiceCondition(s, nodeId, choice.id, null))
+                          return
+                        }
+                        const isBoolean = variableType(newVariableId) === 'boolean'
                         onUpdate((s) =>
-                          setChoiceCondition(
-                            s,
-                            nodeId,
-                            choice.id,
-                            e.target.value ? { variableId: e.target.value, comparator: 'gte', value: 1 } : null,
-                          ),
+                          setChoiceCondition(s, nodeId, choice.id, {
+                            variableId: newVariableId,
+                            comparator: isBoolean ? 'eq' : 'gte',
+                            value: 1,
+                          }),
                         )
-                      }
+                      }}
                       aria-label="Переменная условия"
                       className={`${fieldClass} flex-1 py-1 text-xs`}
                     >
@@ -161,41 +170,61 @@ export function NodeInspector({ story, nodeId, onUpdate, onClose, onRequestDelet
                       ))}
                     </select>
                     {choice.condition && (
-                      <>
+                      variableType(choice.condition.variableId) === 'boolean' ? (
                         <select
-                          value={choice.condition.comparator}
+                          value={choice.condition.value ? '1' : '0'}
                           onChange={(e) =>
                             onUpdate((s) =>
                               setChoiceCondition(s, nodeId, choice.id, {
                                 ...choice.condition!,
-                                comparator: e.target.value as Comparator,
-                              }),
-                            )
-                          }
-                          aria-label="Сравнение"
-                          className={`${fieldClass} py-1 text-xs`}
-                        >
-                          {Object.entries(COMPARATOR_LABELS).map(([key, label]) => (
-                            <option key={key} value={key}>
-                              {label}
-                            </option>
-                          ))}
-                        </select>
-                        <input
-                          type="number"
-                          value={choice.condition.value}
-                          onChange={(e) =>
-                            onUpdate((s) =>
-                              setChoiceCondition(s, nodeId, choice.id, {
-                                ...choice.condition!,
-                                value: Number(e.target.value) || 0,
+                                comparator: 'eq',
+                                value: Number(e.target.value),
                               }),
                             )
                           }
                           aria-label="Значение условия"
-                          className={`${fieldClass} w-14 py-1 text-xs`}
-                        />
-                      </>
+                          className={`${fieldClass} py-1 text-xs`}
+                        >
+                          <option value="1">Да</option>
+                          <option value="0">Нет</option>
+                        </select>
+                      ) : (
+                        <>
+                          <select
+                            value={choice.condition.comparator}
+                            onChange={(e) =>
+                              onUpdate((s) =>
+                                setChoiceCondition(s, nodeId, choice.id, {
+                                  ...choice.condition!,
+                                  comparator: e.target.value as Comparator,
+                                }),
+                              )
+                            }
+                            aria-label="Сравнение"
+                            className={`${fieldClass} py-1 text-xs`}
+                          >
+                            {Object.entries(COMPARATOR_LABELS).map(([key, label]) => (
+                              <option key={key} value={key}>
+                                {label}
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            type="number"
+                            value={choice.condition.value}
+                            onChange={(e) =>
+                              onUpdate((s) =>
+                                setChoiceCondition(s, nodeId, choice.id, {
+                                  ...choice.condition!,
+                                  value: Number(e.target.value) || 0,
+                                }),
+                              )
+                            }
+                            aria-label="Значение условия"
+                            className={`${fieldClass} w-14 py-1 text-xs`}
+                          />
+                        </>
+                      )
                     )}
                   </div>
 
@@ -216,82 +245,119 @@ export function NodeInspector({ story, nodeId, onUpdate, onClose, onRequestDelet
                         + эффект
                       </button>
                     </div>
-                    {choice.effects.map((effect, index) => (
-                      <div key={index} className="flex items-center gap-1 text-xs">
-                        <select
-                          value={effect.variableId}
-                          onChange={(e) =>
-                            onUpdate((s) =>
-                              setChoiceEffects(
-                                s,
-                                nodeId,
-                                choice.id,
-                                choice.effects.map((eff, i) =>
-                                  i === index ? { ...eff, variableId: e.target.value } : eff,
+                    {choice.effects.map((effect, index) => {
+                      const isBoolean = variableType(effect.variableId) === 'boolean'
+                      return (
+                        <div key={index} className="flex items-center gap-1 text-xs">
+                          <select
+                            value={effect.variableId}
+                            onChange={(e) => {
+                              const newVariableId = e.target.value
+                              const becomesBoolean = variableType(newVariableId) === 'boolean'
+                              onUpdate((s) =>
+                                setChoiceEffects(
+                                  s,
+                                  nodeId,
+                                  choice.id,
+                                  choice.effects.map((eff, i) =>
+                                    i === index
+                                      ? {
+                                          ...eff,
+                                          variableId: newVariableId,
+                                          op: becomesBoolean ? 'set' : eff.op,
+                                          value: becomesBoolean ? (eff.value ? 1 : 0) : eff.value,
+                                        }
+                                      : eff,
+                                  ),
                                 ),
-                              ),
-                            )
-                          }
-                          aria-label="Переменная эффекта"
-                          className={`${fieldClass} flex-1 py-1 text-xs`}
-                        >
-                          {story.variables.map((v) => (
-                            <option key={v.id} value={v.id}>
-                              {v.name}
-                            </option>
-                          ))}
-                        </select>
-                        <select
-                          value={effect.op}
-                          onChange={(e) =>
-                            onUpdate((s) =>
-                              setChoiceEffects(
-                                s,
-                                nodeId,
-                                choice.id,
-                                choice.effects.map((eff, i) =>
-                                  i === index ? { ...eff, op: e.target.value as 'set' | 'add' } : eff,
-                                ),
-                              ),
-                            )
-                          }
-                          aria-label="Операция эффекта"
-                          className={`${fieldClass} py-1 text-xs`}
-                        >
-                          <option value="set">=</option>
-                          <option value="add">+=</option>
-                        </select>
-                        <input
-                          type="number"
-                          value={effect.value}
-                          onChange={(e) =>
-                            onUpdate((s) =>
-                              setChoiceEffects(
-                                s,
-                                nodeId,
-                                choice.id,
-                                choice.effects.map((eff, i) =>
-                                  i === index ? { ...eff, value: Number(e.target.value) || 0 } : eff,
-                                ),
-                              ),
-                            )
-                          }
-                          aria-label="Значение эффекта"
-                          className={`${fieldClass} w-14 py-1 text-xs`}
-                        />
-                        <button
-                          onClick={() =>
-                            onUpdate((s) =>
-                              setChoiceEffects(s, nodeId, choice.id, choice.effects.filter((_, i) => i !== index)),
-                            )
-                          }
-                          aria-label="Удалить эффект"
-                          className="px-1 text-red-500 hover:text-red-600"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ))}
+                              )
+                            }}
+                            aria-label="Переменная эффекта"
+                            className={`${fieldClass} flex-1 py-1 text-xs`}
+                          >
+                            {story.variables.map((v) => (
+                              <option key={v.id} value={v.id}>
+                                {v.name}
+                              </option>
+                            ))}
+                          </select>
+                          {isBoolean ? (
+                            <select
+                              value={effect.value ? '1' : '0'}
+                              onChange={(e) =>
+                                onUpdate((s) =>
+                                  setChoiceEffects(
+                                    s,
+                                    nodeId,
+                                    choice.id,
+                                    choice.effects.map((eff, i) =>
+                                      i === index ? { ...eff, op: 'set', value: Number(e.target.value) } : eff,
+                                    ),
+                                  ),
+                                )
+                              }
+                              aria-label="Значение эффекта"
+                              className={`${fieldClass} py-1 text-xs`}
+                            >
+                              <option value="1">Да</option>
+                              <option value="0">Нет</option>
+                            </select>
+                          ) : (
+                            <>
+                              <select
+                                value={effect.op}
+                                onChange={(e) =>
+                                  onUpdate((s) =>
+                                    setChoiceEffects(
+                                      s,
+                                      nodeId,
+                                      choice.id,
+                                      choice.effects.map((eff, i) =>
+                                        i === index ? { ...eff, op: e.target.value as 'set' | 'add' } : eff,
+                                      ),
+                                    ),
+                                  )
+                                }
+                                aria-label="Операция эффекта"
+                                className={`${fieldClass} py-1 text-xs`}
+                              >
+                                <option value="set">=</option>
+                                <option value="add">+=</option>
+                              </select>
+                              <input
+                                type="number"
+                                value={effect.value}
+                                onChange={(e) =>
+                                  onUpdate((s) =>
+                                    setChoiceEffects(
+                                      s,
+                                      nodeId,
+                                      choice.id,
+                                      choice.effects.map((eff, i) =>
+                                        i === index ? { ...eff, value: Number(e.target.value) || 0 } : eff,
+                                      ),
+                                    ),
+                                  )
+                                }
+                                aria-label="Значение эффекта"
+                                className={`${fieldClass} w-14 py-1 text-xs`}
+                              />
+                            </>
+                          )}
+                          <button
+                            onClick={() =>
+                              onUpdate((s) =>
+                                setChoiceEffects(s, nodeId, choice.id, choice.effects.filter((_, i) => i !== index)),
+                              )
+                            }
+                            aria-label="Удалить эффект"
+                            className="px-1 text-red-500 hover:text-red-600"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               )}

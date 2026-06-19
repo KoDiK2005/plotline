@@ -38,7 +38,8 @@ function parseChoice(value: unknown): Choice | null {
 function isStoryVariable(value: unknown): value is StoryVariable {
   if (typeof value !== 'object' || value === null) return false
   const v = value as Record<string, unknown>
-  return typeof v.id === 'string' && typeof v.name === 'string' && typeof v.initialValue === 'number'
+  if (typeof v.id !== 'string' || typeof v.name !== 'string' || typeof v.initialValue !== 'number') return false
+  return v.type === undefined || v.type === 'number' || v.type === 'boolean'
 }
 
 function parseStoryNode(value: unknown): StoryNode | null {

@@ -28,10 +28,14 @@ export interface StoryNode {
   position: { x: number; y: number }
 }
 
+export type VariableType = 'number' | 'boolean'
+
 export interface StoryVariable {
   id: string
   name: string
   initialValue: number
+  /** Defaults to 'number' when absent, for stories saved before this field existed. */
+  type?: VariableType
 }
 
 export interface Story {

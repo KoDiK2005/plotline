@@ -1,4 +1,4 @@
-import type { Choice, ChoiceCondition, ChoiceEffect, Story, StoryNode, StoryVariable } from '../types/story'
+import type { Choice, ChoiceCondition, ChoiceEffect, Story, StoryNode, StoryVariable, VariableType } from '../types/story'
 import { generateId } from './id'
 
 function touch(story: Story): Story {
@@ -145,15 +145,20 @@ export function setChoiceEffects(
   return touch({ ...story, nodes })
 }
 
-export function addVariable(story: Story, name = 'Переменная', initialValue = 0): { story: Story; variableId: string } {
-  const variable: StoryVariable = { id: generateId('var'), name, initialValue }
+export function addVariable(
+  story: Story,
+  name = 'Переменная',
+  initialValue = 0,
+  type: VariableType = 'number',
+): { story: Story; variableId: string } {
+  const variable: StoryVariable = { id: generateId('var'), name, initialValue, type }
   return { story: touch({ ...story, variables: [...story.variables, variable] }), variableId: variable.id }
 }
 
 export function updateVariable(
   story: Story,
   variableId: string,
-  patch: Partial<Pick<StoryVariable, 'name' | 'initialValue'>>,
+  patch: Partial<Pick<StoryVariable, 'name' | 'initialValue' | 'type'>>,
 ): Story {
   if (!story.variables.some((v) => v.id === variableId)) return story
   const variables = story.variables.map((v) => (v.id === variableId ? { ...v, ...patch } : v))

@@ -1,4 +1,4 @@
-import type { Story } from '../../types/story'
+import type { Story, VariableType } from '../../types/story'
 import { addVariable, deleteVariable, updateVariable } from '../../engine/storyOps'
 import { Button } from '../Button'
 
@@ -21,7 +21,7 @@ export function VariablesPanel({ story, onUpdate }: VariablesPanelProps) {
         <Button
           variant="ghost"
           className="px-2 py-1 text-xs"
-          onClick={() => onUpdate((s) => addVariable(s, 'Переменная', 0).story)}
+          onClick={() => onUpdate((s) => addVariable(s, 'Переменная', 0, 'number').story)}
         >
           + Добавить
         </Button>
@@ -34,37 +34,71 @@ export function VariablesPanel({ story, onUpdate }: VariablesPanelProps) {
         </p>
       ) : (
         <div className="flex flex-wrap gap-2">
-          {story.variables.map((variable) => (
-            <div
-              key={variable.id}
-              className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-1 dark:border-slate-800 dark:bg-slate-900"
-            >
-              <input
-                value={variable.name}
-                onChange={(e) => onUpdate((s) => updateVariable(s, variable.id, { name: e.target.value }))}
-                aria-label="Имя переменной"
-                className={`${fieldClass} w-28`}
-              />
-              <span className="text-xs text-slate-400">=</span>
-              <input
-                type="number"
-                value={variable.initialValue}
-                onChange={(e) =>
-                  onUpdate((s) => updateVariable(s, variable.id, { initialValue: Number(e.target.value) || 0 }))
-                }
-                aria-label="Начальное значение"
-                className={`${fieldClass} w-16`}
-              />
-              <button
-                onClick={() => onUpdate((s) => deleteVariable(s, variable.id))}
-                className="px-1 text-xs text-red-500 hover:text-red-600"
-                title="Удалить переменную"
-                aria-label="Удалить переменную"
+          {story.variables.map((variable) => {
+            const type: VariableType = variable.type ?? 'number'
+            return (
+              <div
+                key={variable.id}
+                className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-1 dark:border-slate-800 dark:bg-slate-900"
               >
-                ✕
-              </button>
-            </div>
-          ))}
+                <input
+                  value={variable.name}
+                  onChange={(e) => onUpdate((s) => updateVariable(s, variable.id, { name: e.target.value }))}
+                  aria-label="Имя переменной"
+                  className={`${fieldClass} w-28`}
+                />
+                <select
+                  value={type}
+                  onChange={(e) => {
+                    const nextType = e.target.value as VariableType
+                    onUpdate((s) =>
+                      updateVariable(s, variable.id, {
+                        type: nextType,
+                        initialValue: nextType === 'boolean' ? (variable.initialValue ? 1 : 0) : variable.initialValue,
+                      }),
+                    )
+                  }}
+                  aria-label="Тип переменной"
+                  className={`${fieldClass} w-20`}
+                >
+                  <option value="number">Число</option>
+                  <option value="boolean">Да/Нет</option>
+                </select>
+                <span className="text-xs text-slate-400">=</span>
+                {type === 'boolean' ? (
+                  <select
+                    value={variable.initialValue ? '1' : '0'}
+                    onChange={(e) =>
+                      onUpdate((s) => updateVariable(s, variable.id, { initialValue: Number(e.target.value) }))
+                    }
+                    aria-label="Начальное значение"
+                    className={`${fieldClass} w-16`}
+                  >
+                    <option value="0">Нет</option>
+                    <option value="1">Да</option>
+                  </select>
+                ) : (
+                  <input
+                    type="number"
+                    value={variable.initialValue}
+                    onChange={(e) =>
+                      onUpdate((s) => updateVariable(s, variable.id, { initialValue: Number(e.target.value) || 0 }))
+                    }
+                    aria-label="Начальное значение"
+                    className={`${fieldClass} w-16`}
+                  />
+                )}
+                <button
+                  onClick={() => onUpdate((s) => deleteVariable(s, variable.id))}
+                  className="px-1 text-xs text-red-500 hover:text-red-600"
+                  title="Удалить переменную"
+                  aria-label="Удалить переменную"
+                >
+                  ✕
+                </button>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>

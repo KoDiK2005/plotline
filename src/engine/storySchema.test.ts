@@ -78,6 +78,26 @@ describe('parseStoryJson', () => {
     }
     expect(parseStoryJson(broken)).toBeNull()
   })
+
+  it('accepts a variable with an explicit type and one saved before the type field existed', () => {
+    const story = createStory('Test')
+    const withTypedVariable = {
+      ...story,
+      variables: [{ id: 'v1', name: 'Has Key', initialValue: 0, type: 'boolean' }],
+    }
+    const parsed = parseStoryJson(withTypedVariable)
+    expect(parsed!.variables[0].type).toBe('boolean')
+
+    const legacyVariable = { ...story, variables: [{ id: 'v1', name: 'Score', initialValue: 0 }] }
+    const parsedLegacy = parseStoryJson(legacyVariable)
+    expect(parsedLegacy!.variables[0].type).toBeUndefined()
+  })
+
+  it('rejects a variable with an invalid type', () => {
+    const story = createStory('Test')
+    const broken = { ...story, variables: [{ id: 'v1', name: 'Score', initialValue: 0, type: 'string' }] }
+    expect(parseStoryJson(broken)).toBeNull()
+  })
 })
 
 describe('parseLibraryBackup', () => {
