@@ -18,6 +18,14 @@ export function SceneNode({ data, selected }: NodeProps<SceneNodeData>) {
             Старт
           </span>
         )}
+        {data.isUnreachable && (
+          <span
+            title="Недостижима из начала истории"
+            className="mb-1 ml-1 inline-block rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-600 dark:text-amber-400"
+          >
+            ⚠ Недостижима
+          </span>
+        )}
         <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
           {data.title || 'Без названия'}
         </p>

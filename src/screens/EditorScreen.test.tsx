@@ -329,6 +329,19 @@ describe('EditorScreen', () => {
     })
   })
 
+  it('shows an unreachable badge on the canvas for a newly added scene with no incoming links', async () => {
+    const story = createStory('Edit Me')
+    setupStory(story)
+    const user = userEvent.setup()
+    render(<EditorScreen />)
+
+    expect(screen.queryByText('⚠ Недостижима')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '+ Добавить сцену' }))
+
+    expect(screen.getByText('⚠ Недостижима')).toBeInTheDocument()
+  })
+
   it('opens the find & replace panel and replaces text across the story in one undo step', async () => {
     let story = createStory('Edit Me')
     const startId = story.startNodeId!
