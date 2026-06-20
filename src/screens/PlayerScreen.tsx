@@ -21,6 +21,7 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
   const openEditor = useUIStore((s) => s.openEditor)
 
   const recordVisit = useProgressStore((s) => s.recordVisit)
+  const recordChoice = useProgressStore((s) => s.recordChoice)
   const recordEnding = useProgressStore((s) => s.recordEnding)
   const recordPlayStart = useProgressStore((s) => s.recordPlayStart)
   const savePlayState = useProgressStore((s) => s.savePlayState)
@@ -63,11 +64,12 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
       const index = Number(e.key) - 1
       if (!Number.isInteger(index) || index < 0 || index >= choices.length) return
       e.preventDefault()
+      recordChoice(story.id, choices[index].id)
       setPlayState((state) => (state ? choose(story, state, choices[index].id) : state))
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [showMap, ending, choices, story])
+  }, [showMap, ending, choices, story, recordChoice])
 
   if (!playState) {
     return (
@@ -155,7 +157,10 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
               {choices.map((choice, index) => (
                 <button
                   key={choice.id}
-                  onClick={() => setPlayState((state) => (state ? choose(story, state, choice.id) : state))}
+                  onClick={() => {
+                    recordChoice(story.id, choice.id)
+                    setPlayState((state) => (state ? choose(story, state, choice.id) : state))
+                  }}
                   className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 text-left text-sm font-medium text-slate-800 transition-colors hover:border-violet-400 hover:bg-violet-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                 >
                   {index < 9 && (
@@ -166,7 +171,16 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
                       {index + 1}
                     </kbd>
                   )}
-                  <span>{choice.text}</span>
+                  <span className="flex-1">{choice.text}</span>
+                  {progress.visitedChoiceIds.includes(choice.id) && (
+                    <span
+                      title="Уже выбирали"
+                      aria-hidden="true"
+                      className="shrink-0 text-xs text-violet-500 dark:text-violet-400"
+                    >
+                      ✓
+                    </span>
+                  )}
                 </button>
               ))}
             </div>

@@ -4,6 +4,7 @@ import type { PlayState } from '../engine/play'
 
 export interface StoryProgress {
   visitedNodeIds: string[]
+  visitedChoiceIds: string[]
   discoveredEndingIds: string[]
   playCount: number
   lastPlayedAt: number
@@ -13,6 +14,7 @@ export interface StoryProgress {
 interface ProgressState {
   progress: Record<string, StoryProgress>
   recordVisit: (storyId: string, nodeId: string) => void
+  recordChoice: (storyId: string, choiceId: string) => void
   recordEnding: (storyId: string, nodeId: string) => void
   recordPlayStart: (storyId: string) => void
   savePlayState: (storyId: string, playState: PlayState | null) => void
@@ -22,10 +24,21 @@ interface ProgressState {
 
 const emptyProgress: StoryProgress = {
   visitedNodeIds: [],
+  visitedChoiceIds: [],
   discoveredEndingIds: [],
   playCount: 0,
   lastPlayedAt: 0,
   savedPlay: null,
+}
+
+// Persisted data may predate newer StoryProgress fields (e.g. visitedChoiceIds),
+// so backfill defaults for those. Returns the same reference when nothing is
+// missing, so callers selecting this from the store don't get a new object
+// (and an infinite re-render loop) on every read.
+function withDefaults(stored: StoryProgress | undefined): StoryProgress {
+  if (!stored) return emptyProgress
+  const isComplete = Object.keys(emptyProgress).every((key) => key in stored)
+  return isComplete ? stored : { ...emptyProgress, ...stored }
 }
 
 export const useProgressStore = create<ProgressState>()(
@@ -35,7 +48,7 @@ export const useProgressStore = create<ProgressState>()(
 
       recordVisit: (storyId, nodeId) => {
         set((state) => {
-          const current = state.progress[storyId] ?? emptyProgress
+          const current = withDefaults(state.progress[storyId])
           if (current.visitedNodeIds.includes(nodeId)) return state
           return {
             progress: {
@@ -46,9 +59,22 @@ export const useProgressStore = create<ProgressState>()(
         })
       },
 
+      recordChoice: (storyId, choiceId) => {
+        set((state) => {
+          const current = withDefaults(state.progress[storyId])
+          if (current.visitedChoiceIds.includes(choiceId)) return state
+          return {
+            progress: {
+              ...state.progress,
+              [storyId]: { ...current, visitedChoiceIds: [...current.visitedChoiceIds, choiceId] },
+            },
+          }
+        })
+      },
+
       recordEnding: (storyId, nodeId) => {
         set((state) => {
-          const current = state.progress[storyId] ?? emptyProgress
+          const current = withDefaults(state.progress[storyId])
           if (current.discoveredEndingIds.includes(nodeId)) return state
           return {
             progress: {
@@ -64,7 +90,7 @@ export const useProgressStore = create<ProgressState>()(
 
       recordPlayStart: (storyId) => {
         set((state) => {
-          const current = state.progress[storyId] ?? emptyProgress
+          const current = withDefaults(state.progress[storyId])
           return {
             progress: {
               ...state.progress,
@@ -80,7 +106,7 @@ export const useProgressStore = create<ProgressState>()(
 
       savePlayState: (storyId, playState) => {
         set((state) => {
-          const current = state.progress[storyId] ?? emptyProgress
+          const current = withDefaults(state.progress[storyId])
           return { progress: { ...state.progress, [storyId]: { ...current, savedPlay: playState } } }
         })
       },
@@ -93,7 +119,7 @@ export const useProgressStore = create<ProgressState>()(
         })
       },
 
-      getProgress: (storyId) => get().progress[storyId] ?? emptyProgress,
+      getProgress: (storyId) => withDefaults(get().progress[storyId]),
     }),
     { name: 'plotline-progress' },
   ),

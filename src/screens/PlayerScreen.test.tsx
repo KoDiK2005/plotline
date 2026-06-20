@@ -289,6 +289,38 @@ describe('PlayerScreen', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('marks a choice as already taken once the player has chosen it before, across playthroughs', async () => {
+    const { story } = branchingStory()
+    setupStory(story)
+    const user = userEvent.setup()
+    const { unmount } = render(<PlayerScreen />)
+
+    await user.click(screen.getByRole('button', { name: 'Be brave' }))
+    expect(await screen.findByText('Конец истории')).toBeInTheDocument()
+    unmount()
+
+    render(<PlayerScreen />)
+    const braveButton = screen.getByRole('button', { name: 'Be brave' })
+    const runButton = screen.getByRole('button', { name: 'Run away' })
+    expect(within(braveButton).getByTitle('Уже выбирали')).toBeInTheDocument()
+    expect(within(runButton).queryByTitle('Уже выбирали')).not.toBeInTheDocument()
+  })
+
+  it('marks a choice as already taken via the number-key shortcut too', async () => {
+    const { story } = branchingStory()
+    setupStory(story)
+    render(<PlayerScreen />)
+
+    fireEvent.keyDown(window, { key: '1' })
+    expect(await screen.findByText('Конец истории')).toBeInTheDocument()
+
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Сыграть заново' }))
+
+    expect(
+      within(screen.getByRole('button', { name: 'Be brave' })).getByTitle('Уже выбирали'),
+    ).toBeInTheDocument()
+  })
+
   it('shows a fallback message instead of crashing when there is no valid start node', () => {
     const story = { ...createStory('No Start'), startNodeId: null }
     setupStory(story)
