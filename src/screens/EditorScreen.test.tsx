@@ -207,6 +207,27 @@ describe('EditorScreen', () => {
     expect(screen.getByDisplayValue('Цель')).toBeInTheDocument()
   })
 
+  it('reorders choices with the up/down buttons in the node inspector', async () => {
+    let story = createStory('Edit Me')
+    const startId = story.startNodeId!
+    story = addChoice(story, startId, 'First')
+    story = addChoice(story, startId, 'Second')
+    setupStory(story)
+    const user = userEvent.setup()
+    render(<EditorScreen />)
+
+    useUIStore.getState().selectNode(startId)
+    await screen.findByRole('heading', { name: 'Сцена' })
+
+    const upButtons = screen.getAllByRole('button', { name: 'Переместить вариант выше' })
+    expect(upButtons[0]).toBeDisabled()
+
+    await user.click(upButtons[1])
+
+    const updatedChoices = useLibraryStore.getState().stories[story.id].nodes[startId].choices
+    expect(updatedChoices.map((c) => c.text)).toEqual(['Second', 'First'])
+  })
+
   it('opens the preview panel from the node inspector, shows scene text, and advances on choice click', async () => {
     let story = createStory('Edit Me')
     const startId = story.startNodeId!

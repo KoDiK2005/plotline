@@ -133,6 +133,19 @@ export function deleteChoice(story: Story, nodeId: string, choiceId: string): St
   return touch({ ...story, nodes })
 }
 
+export function moveChoice(story: Story, nodeId: string, choiceId: string, direction: 'up' | 'down'): Story {
+  const node = story.nodes[nodeId]
+  if (!node) return story
+  const index = node.choices.findIndex((c) => c.id === choiceId)
+  if (index === -1) return story
+  const targetIndex = direction === 'up' ? index - 1 : index + 1
+  if (targetIndex < 0 || targetIndex >= node.choices.length) return story
+  const choices = [...node.choices]
+  ;[choices[index], choices[targetIndex]] = [choices[targetIndex], choices[index]]
+  const nodes = { ...story.nodes, [nodeId]: { ...node, choices } }
+  return touch({ ...story, nodes })
+}
+
 export function setChoiceCondition(
   story: Story,
   nodeId: string,

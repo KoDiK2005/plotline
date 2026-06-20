@@ -3,6 +3,7 @@ import {
   addChoice,
   deleteChoice,
   linkChoice,
+  moveChoice,
   setChoiceCondition,
   setChoiceEffects,
   setStartNode,
@@ -119,15 +120,37 @@ export function NodeInspector({
         </div>
 
         <div className="flex flex-col gap-2">
-          {node.choices.map((choice) => (
+          {node.choices.map((choice, index) => (
             <div key={choice.id} className="rounded-lg border border-slate-200 p-2 dark:border-slate-800">
-              <input
-                value={choice.text}
-                onChange={(e) => onUpdate((s) => updateChoiceText(s, nodeId, choice.id, e.target.value))}
-                placeholder="Текст варианта"
-                aria-label="Текст варианта"
-                className={`${fieldClass} mb-1.5 w-full py-1 text-xs`}
-              />
+              <div className="mb-1.5 flex items-center gap-1">
+                <div className="flex shrink-0 flex-col">
+                  <button
+                    onClick={() => onUpdate((s) => moveChoice(s, nodeId, choice.id, 'up'))}
+                    disabled={index === 0}
+                    aria-label="Переместить вариант выше"
+                    title="Переместить выше"
+                    className="leading-none text-slate-400 hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:text-violet-400"
+                  >
+                    ▲
+                  </button>
+                  <button
+                    onClick={() => onUpdate((s) => moveChoice(s, nodeId, choice.id, 'down'))}
+                    disabled={index === node.choices.length - 1}
+                    aria-label="Переместить вариант ниже"
+                    title="Переместить ниже"
+                    className="leading-none text-slate-400 hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:text-violet-400"
+                  >
+                    ▼
+                  </button>
+                </div>
+                <input
+                  value={choice.text}
+                  onChange={(e) => onUpdate((s) => updateChoiceText(s, nodeId, choice.id, e.target.value))}
+                  placeholder="Текст варианта"
+                  aria-label="Текст варианта"
+                  className={`${fieldClass} w-full py-1 text-xs`}
+                />
+              </div>
               <div className="flex gap-1.5">
                 <select
                   value={choice.targetNodeId ?? ''}

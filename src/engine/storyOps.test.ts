@@ -9,6 +9,7 @@ import {
   deleteVariable,
   duplicateNode,
   linkChoice,
+  moveChoice,
   setChoiceCondition,
   setChoiceEffects,
   setStartNode,
@@ -73,6 +74,47 @@ describe('choices', () => {
     const choiceId = story.nodes[startId].choices[0].id
     story = linkChoice(story, startId, choiceId, 'does-not-exist')
     expect(story.nodes[startId].choices[0].targetNodeId).toBeNull()
+  })
+})
+
+describe('moveChoice', () => {
+  it('swaps a choice with its neighbour when moved up or down', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    story = addChoice(story, startId, 'First')
+    story = addChoice(story, startId, 'Second')
+    story = addChoice(story, startId, 'Third')
+    const [firstId, secondId, thirdId] = story.nodes[startId].choices.map((c) => c.id)
+
+    story = moveChoice(story, startId, secondId, 'up')
+    expect(story.nodes[startId].choices.map((c) => c.id)).toEqual([secondId, firstId, thirdId])
+
+    story = moveChoice(story, startId, secondId, 'down')
+    expect(story.nodes[startId].choices.map((c) => c.id)).toEqual([firstId, secondId, thirdId])
+  })
+
+  it('is a no-op at the boundaries', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    story = addChoice(story, startId, 'First')
+    story = addChoice(story, startId, 'Second')
+    const [firstId, secondId] = story.nodes[startId].choices.map((c) => c.id)
+
+    const movedFirstUp = moveChoice(story, startId, firstId, 'up')
+    expect(movedFirstUp).toBe(story)
+
+    const movedSecondDown = moveChoice(story, startId, secondId, 'down')
+    expect(movedSecondDown).toBe(story)
+  })
+
+  it('is a no-op for a missing node or choice', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    story = addChoice(story, startId, 'Only')
+    const choiceId = story.nodes[startId].choices[0].id
+
+    expect(moveChoice(story, 'missing-node', choiceId, 'up')).toBe(story)
+    expect(moveChoice(story, startId, 'missing-choice', 'up')).toBe(story)
   })
 })
 
