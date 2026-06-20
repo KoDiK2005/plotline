@@ -79,4 +79,36 @@ describe('validateStory', () => {
     const issues = validateStory(story)
     expect(issues.some((i) => i.id === `unused-variable-${variableId}`)).toBe(false)
   })
+
+  it('warns about a variable read in a condition but never changed by any effect', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { text: 'The beginning.' })
+    story = addChoice(story, startId, 'Use a key')
+    const choiceId = story.nodes[startId].choices[0].id
+    const { story: withVar, variableId } = addVariable(story, 'Has Key')
+    story = withVar
+    story = setChoiceCondition(story, startId, choiceId, { variableId, comparator: 'gte', value: 1 })
+
+    const issues = validateStory(story)
+    expect(issues.some((i) => i.id === `static-variable-${variableId}`)).toBe(true)
+    expect(issues.some((i) => i.id === `unused-variable-${variableId}`)).toBe(false)
+  })
+
+  it('does not warn about a static branch when a variable is both read and written', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { text: 'The beginning.' })
+    story = addChoice(story, startId, 'Take it')
+    story = addChoice(story, startId, 'Use it')
+    const [takeChoiceId, useChoiceId] = story.nodes[startId].choices.map((c) => c.id)
+    const { story: withVar, variableId } = addVariable(story, 'Has Key')
+    story = withVar
+    story = setChoiceEffects(story, startId, takeChoiceId, [{ variableId, op: 'set', value: 1 }])
+    story = setChoiceCondition(story, startId, useChoiceId, { variableId, comparator: 'gte', value: 1 })
+
+    const issues = validateStory(story)
+    expect(issues.some((i) => i.id === `static-variable-${variableId}`)).toBe(false)
+    expect(issues.some((i) => i.id === `unused-variable-${variableId}`)).toBe(false)
+  })
 })

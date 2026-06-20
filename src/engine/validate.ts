@@ -75,18 +75,23 @@ export function validateStory(story: Story): ValidationIssue[] {
   }
 
   for (const variable of story.variables) {
-    const isUsed = nodes.some((node) =>
-      node.choices.some(
-        (choice) =>
-          choice.condition?.variableId === variable.id ||
-          choice.effects.some((effect) => effect.variableId === variable.id),
-      ),
+    const isReadInCondition = nodes.some((node) =>
+      node.choices.some((choice) => choice.condition?.variableId === variable.id),
     )
-    if (!isUsed) {
+    const isWrittenByEffect = nodes.some((node) =>
+      node.choices.some((choice) => choice.effects.some((effect) => effect.variableId === variable.id)),
+    )
+    if (!isReadInCondition && !isWrittenByEffect) {
       issues.push({
         id: `unused-variable-${variable.id}`,
         severity: 'warning',
         message: `Переменная «${variable.name}» не используется ни в одном условии или эффекте.`,
+      })
+    } else if (isReadInCondition && !isWrittenByEffect) {
+      issues.push({
+        id: `static-variable-${variable.id}`,
+        severity: 'warning',
+        message: `Переменная «${variable.name}» используется в условиях, но её не меняет ни один эффект — связанные ветки всегда останутся в одном и том же состоянии.`,
       })
     }
   }
