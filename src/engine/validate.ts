@@ -74,6 +74,23 @@ export function validateStory(story: Story): ValidationIssue[] {
     }
   }
 
+  for (const variable of story.variables) {
+    const isUsed = nodes.some((node) =>
+      node.choices.some(
+        (choice) =>
+          choice.condition?.variableId === variable.id ||
+          choice.effects.some((effect) => effect.variableId === variable.id),
+      ),
+    )
+    if (!isUsed) {
+      issues.push({
+        id: `unused-variable-${variable.id}`,
+        severity: 'warning',
+        message: `Переменная «${variable.name}» не используется ни в одном условии или эффекте.`,
+      })
+    }
+  }
+
   return issues
 }
 

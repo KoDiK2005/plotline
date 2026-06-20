@@ -301,6 +301,7 @@ function EditorScreenInner() {
             onRequestDelete={() => setConfirmDeleteNodeId(selectedNodeId)}
             onPreview={() => setPreviewNodeId(selectedNodeId)}
             onDuplicate={() => handleDuplicateNode(selectedNodeId)}
+            onJumpToNode={jumpToNode}
           />
         )}
       </div>

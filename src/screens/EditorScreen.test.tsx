@@ -185,6 +185,28 @@ describe('EditorScreen', () => {
     expect(screen.getByDisplayValue('Лес (копия)')).toBeInTheDocument()
   })
 
+  it('jumps to the linked scene from a choice in the node inspector', async () => {
+    let story = createStory('Edit Me')
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { title: 'Старт' })
+    const { story: s2, nodeId: targetId } = addNode(story)
+    story = s2
+    story = updateNode(story, targetId, { title: 'Цель' })
+    story = addChoice(story, startId, 'Иди дальше')
+    story = linkChoice(story, startId, story.nodes[startId].choices[0].id, targetId)
+    setupStory(story)
+
+    const user = userEvent.setup()
+    render(<EditorScreen />)
+
+    useUIStore.getState().selectNode(startId)
+    await screen.findByRole('heading', { name: 'Сцена' })
+
+    await user.click(screen.getByRole('button', { name: 'Перейти к связанной сцене' }))
+
+    expect(screen.getByDisplayValue('Цель')).toBeInTheDocument()
+  })
+
   it('opens the preview panel from the node inspector, shows scene text, and advances on choice click', async () => {
     let story = createStory('Edit Me')
     const startId = story.startNodeId!

@@ -28,6 +28,7 @@ interface NodeInspectorProps {
   onRequestDelete: () => void
   onPreview: () => void
   onDuplicate: () => void
+  onJumpToNode: (nodeId: string) => void
 }
 
 const fieldClass =
@@ -42,6 +43,7 @@ export function NodeInspector({
   onRequestDelete,
   onPreview,
   onDuplicate,
+  onJumpToNode,
 }: NodeInspectorProps) {
   const node = story.nodes[nodeId]
   if (!node) return null
@@ -140,6 +142,16 @@ export function NodeInspector({
                     </option>
                   ))}
                 </select>
+                {choice.targetNodeId && (
+                  <button
+                    onClick={() => onJumpToNode(choice.targetNodeId!)}
+                    aria-label="Перейти к связанной сцене"
+                    title="Перейти к связанной сцене"
+                    className="px-1 text-slate-400 hover:text-violet-600 dark:hover:text-violet-400"
+                  >
+                    →
+                  </button>
+                )}
                 <Button
                   variant="ghost"
                   className="px-2 py-1 text-xs text-red-500"

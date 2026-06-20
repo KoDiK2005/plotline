@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addChoice, addNode, createStory, setChoiceCondition, setChoiceEffects, updateNode } from './storyOps'
+import { addChoice, addNode, addVariable, createStory, setChoiceCondition, setChoiceEffects, updateNode } from './storyOps'
 import { hasBlockingErrors, validateStory } from './validate'
 
 describe('validateStory', () => {
@@ -53,5 +53,30 @@ describe('validateStory', () => {
     const issues = validateStory(story)
     expect(issues.some((i) => i.id === `bad-condition-${choiceId}`)).toBe(true)
     expect(issues.some((i) => i.id === `bad-effect-${choiceId}-0`)).toBe(true)
+  })
+
+  it('warns about a declared variable that is never used in any condition or effect', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { text: 'The beginning.' })
+    const { story: withVar, variableId } = addVariable(story, 'Unused')
+    story = withVar
+
+    const issues = validateStory(story)
+    expect(issues.some((i) => i.id === `unused-variable-${variableId}`)).toBe(true)
+  })
+
+  it('does not warn about a variable referenced only in an effect', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { text: 'The beginning.' })
+    story = addChoice(story, startId, 'Take it')
+    const choiceId = story.nodes[startId].choices[0].id
+    const { story: withVar, variableId } = addVariable(story, 'Has Item')
+    story = withVar
+    story = setChoiceEffects(story, startId, choiceId, [{ variableId, op: 'set', value: 1 }])
+
+    const issues = validateStory(story)
+    expect(issues.some((i) => i.id === `unused-variable-${variableId}`)).toBe(false)
   })
 })
