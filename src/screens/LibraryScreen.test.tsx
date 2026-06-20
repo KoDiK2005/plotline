@@ -39,7 +39,7 @@ describe('LibraryScreen', () => {
     const user = userEvent.setup()
     render(<LibraryScreen />)
 
-    const input = screen.getByPlaceholderText('Поиск историй...')
+    const input = screen.getByPlaceholderText('Поиск по названию и описанию...')
     await user.type(input, 'кофейня')
 
     expect(screen.getByText('Кофейня на перекрёстке')).toBeInTheDocument()
@@ -51,7 +51,7 @@ describe('LibraryScreen', () => {
     const user = userEvent.setup()
     render(<LibraryScreen />)
 
-    const input = screen.getByPlaceholderText('Поиск историй...')
+    const input = screen.getByPlaceholderText('Поиск по названию и описанию...')
     await user.type(input, 'zzz-no-match')
 
     expect(screen.getByText('Ничего не найдено.')).toBeInTheDocument()
@@ -61,11 +61,23 @@ describe('LibraryScreen', () => {
     const user = userEvent.setup()
     render(<LibraryScreen />)
 
-    const input = screen.getByPlaceholderText('Поиск историй...')
+    const input = screen.getByPlaceholderText('Поиск по названию и описанию...')
     await user.type(input, 'КЛЮЧ')
 
     expect(screen.getByText('Ключ от чердака')).toBeInTheDocument()
     expect(screen.queryByText('Сигнал из глубины')).not.toBeInTheDocument()
+  })
+
+  it('also matches the search query against a story\'s description', async () => {
+    const user = userEvent.setup()
+    render(<LibraryScreen />)
+
+    const input = screen.getByPlaceholderText('Поиск по названию и описанию...')
+    await user.type(input, 'Марианской')
+
+    expect(screen.getByText('Сигнал из глубины')).toBeInTheDocument()
+    expect(screen.queryByText('Кофейня на перекрёстке')).not.toBeInTheDocument()
+    expect(screen.queryByText('Ключ от чердака')).not.toBeInTheDocument()
   })
 
   it('opens the new-story dialog, then creates a blank story and opens the editor on confirm', async () => {

@@ -30,7 +30,7 @@ describe('App', () => {
   it('does not open the overlay on "?" while typing in a text input', () => {
     render(<App />)
 
-    const input = screen.getByPlaceholderText('Поиск историй...')
+    const input = screen.getByPlaceholderText('Поиск по названию и описанию...')
     input.focus()
     fireEvent.keyDown(input, { key: '?' })
 

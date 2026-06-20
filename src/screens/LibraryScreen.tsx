@@ -39,14 +39,15 @@ export function LibraryScreen() {
   )
   const unlockedCount = achievements.filter((a) => a.unlocked).length
 
-  const storyList = useMemo(
-    () =>
-      sortStories(
-        Object.values(stories).filter((s) => s.title.toLowerCase().includes(query.toLowerCase())),
-        sort,
+  const storyList = useMemo(() => {
+    const q = query.toLowerCase()
+    return sortStories(
+      Object.values(stories).filter(
+        (s) => s.title.toLowerCase().includes(q) || s.description.toLowerCase().includes(q),
       ),
-    [stories, query, sort],
-  )
+      sort,
+    )
+  }, [stories, query, sort])
 
   async function handleImportFile(file: File) {
     setError(null)
@@ -92,7 +93,7 @@ export function LibraryScreen() {
         <div className="flex flex-wrap gap-2">
           <input
             type="text"
-            placeholder="Поиск историй..."
+            placeholder="Поиск по названию и описанию..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="w-full max-w-xs rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-violet-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
