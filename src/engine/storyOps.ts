@@ -81,6 +81,20 @@ export function setStartNode(story: Story, nodeId: string): Story {
   return touch({ ...story, startNodeId: nodeId })
 }
 
+export function duplicateNode(story: Story, nodeId: string): { story: Story; nodeId: string | null } {
+  const node = story.nodes[nodeId]
+  if (!node) return { story, nodeId: null }
+  const newNode: StoryNode = {
+    id: generateId('node'),
+    title: `${node.title} (копия)`,
+    text: node.text,
+    choices: node.choices.map((choice) => ({ ...choice, id: generateId('choice') })),
+    position: { x: node.position.x + 40, y: node.position.y + 40 },
+  }
+  const nodes = { ...story.nodes, [newNode.id]: newNode }
+  return { story: touch({ ...story, nodes }), nodeId: newNode.id }
+}
+
 export function addChoice(story: Story, nodeId: string, text = 'Новый вариант'): Story {
   const node = story.nodes[nodeId]
   if (!node) return story

@@ -27,13 +27,22 @@ interface NodeInspectorProps {
   onClose: () => void
   onRequestDelete: () => void
   onPreview: () => void
+  onDuplicate: () => void
 }
 
 const fieldClass =
   'rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-900 outline-none ' +
   'focus:border-violet-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100'
 
-export function NodeInspector({ story, nodeId, onUpdate, onClose, onRequestDelete, onPreview }: NodeInspectorProps) {
+export function NodeInspector({
+  story,
+  nodeId,
+  onUpdate,
+  onClose,
+  onRequestDelete,
+  onPreview,
+  onDuplicate,
+}: NodeInspectorProps) {
   const node = story.nodes[nodeId]
   if (!node) return null
 
@@ -87,6 +96,9 @@ export function NodeInspector({ story, nodeId, onUpdate, onClose, onRequestDelet
         </Button>
         <Button variant="ghost" onClick={onPreview} title="Проверить эту сцену в плеере">
           ▶ Превью
+        </Button>
+        <Button variant="ghost" onClick={onDuplicate} title="Создать копию этой сцены">
+          ⧉ Дублировать
         </Button>
       </div>
 

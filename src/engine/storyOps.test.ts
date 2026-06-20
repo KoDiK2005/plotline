@@ -7,6 +7,7 @@ import {
   deleteChoice,
   deleteNode,
   deleteVariable,
+  duplicateNode,
   linkChoice,
   setChoiceCondition,
   setChoiceEffects,
@@ -106,6 +107,49 @@ describe('deleteNode', () => {
     story = deleteNode(story, startId)
     expect(story.startNodeId).toBeNull()
     expect(Object.keys(story.nodes)).toHaveLength(0)
+  })
+})
+
+describe('duplicateNode', () => {
+  it('clones a node with a "(копия)" title, the same text, and fresh choice ids pointing at the same targets', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { title: 'Лес', text: 'Тёмный лес.' })
+    const { story: s1, nodeId: otherId } = addNode(story)
+    story = s1
+    story = addChoice(story, startId, 'Идти вперёд')
+    story = linkChoice(story, startId, story.nodes[startId].choices[0].id, otherId)
+
+    const { story: s2, nodeId: copyId } = duplicateNode(story, startId)
+    story = s2
+
+    expect(copyId).not.toBeNull()
+    expect(copyId).not.toBe(startId)
+    const copy = story.nodes[copyId!]
+    expect(copy.title).toBe('Лес (копия)')
+    expect(copy.text).toBe('Тёмный лес.')
+    expect(copy.choices).toHaveLength(1)
+    expect(copy.choices[0].id).not.toBe(story.nodes[startId].choices[0].id)
+    expect(copy.choices[0].targetNodeId).toBe(otherId)
+    expect(copy.choices[0].text).toBe('Идти вперёд')
+    // The original node is untouched.
+    expect(story.nodes[startId].title).toBe('Лес')
+  })
+
+  it('offsets the duplicate position from the original', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    story = { ...story, nodes: { ...story.nodes, [startId]: { ...story.nodes[startId], position: { x: 10, y: 20 } } } }
+
+    const { story: next, nodeId: copyId } = duplicateNode(story, startId)
+    expect(next.nodes[copyId!].position).toEqual({ x: 50, y: 60 })
+  })
+
+  it('returns the story unchanged and a null id for a missing node', () => {
+    const story = createStory()
+    const result = duplicateNode(story, 'missing')
+    expect(result.nodeId).toBeNull()
+    expect(result.story).toBe(story)
   })
 })
 

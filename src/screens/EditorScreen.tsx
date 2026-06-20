@@ -25,7 +25,7 @@ import { SceneNode } from '../components/Editor/SceneNode'
 import { VariablesPanel } from '../components/Editor/VariablesPanel'
 import type { SceneNodeData } from '../engine/flowAdapters'
 import { storyToFlowEdges, storyToFlowNodes } from '../engine/flowAdapters'
-import { addNode, applyPositions, deleteNode, linkChoice, moveNode, updateMeta } from '../engine/storyOps'
+import { addNode, applyPositions, deleteNode, duplicateNode, linkChoice, moveNode, updateMeta } from '../engine/storyOps'
 import { autoLayoutPositions, getStoryStats } from '../engine/traverse'
 import { validateStory } from '../engine/validate'
 import { useLibraryStore } from '../store/useLibraryStore'
@@ -189,6 +189,16 @@ function EditorScreenInner() {
     selectNode(newNodeId)
   }
 
+  function handleDuplicateNode(nodeId: string) {
+    let copyId: string | null = null
+    mutate((s) => {
+      const { story: nextStory, nodeId: newNodeId } = duplicateNode(s, nodeId)
+      copyId = newNodeId
+      return nextStory
+    })
+    if (copyId) selectNode(copyId)
+  }
+
   const canUndo = past.length > 0
   const canRedo = future.length > 0
 
@@ -290,6 +300,7 @@ function EditorScreenInner() {
             onClose={() => selectNode(null)}
             onRequestDelete={() => setConfirmDeleteNodeId(selectedNodeId)}
             onPreview={() => setPreviewNodeId(selectedNodeId)}
+            onDuplicate={() => handleDuplicateNode(selectedNodeId)}
           />
         )}
       </div>

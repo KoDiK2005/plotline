@@ -167,6 +167,24 @@ describe('EditorScreen', () => {
     expect(useLibraryStore.getState().stories[story.id].nodes[nodeId].title).toBe('Forest')
   })
 
+  it('duplicates a scene from the node inspector and selects the copy', async () => {
+    let story = createStory('Edit Me')
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { title: 'Лес', text: 'Тёмный лес.' })
+    setupStory(story)
+    const user = userEvent.setup()
+    render(<EditorScreen />)
+
+    useUIStore.getState().selectNode(startId)
+    await screen.findByRole('heading', { name: 'Сцена' })
+
+    expect(Object.keys(sceneCount())).toHaveLength(1)
+    await user.click(screen.getByRole('button', { name: /Дублировать/ }))
+
+    expect(Object.keys(sceneCount())).toHaveLength(2)
+    expect(screen.getByDisplayValue('Лес (копия)')).toBeInTheDocument()
+  })
+
   it('opens the preview panel from the node inspector, shows scene text, and advances on choice click', async () => {
     let story = createStory('Edit Me')
     const startId = story.startNodeId!
