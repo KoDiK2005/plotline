@@ -133,6 +133,14 @@ export function deleteChoice(story: Story, nodeId: string, choiceId: string): St
   return touch({ ...story, nodes })
 }
 
+export function deleteDanglingChoices(story: Story): Story {
+  const nodes: Record<string, StoryNode> = {}
+  for (const [id, node] of Object.entries(story.nodes)) {
+    nodes[id] = { ...node, choices: node.choices.filter((c) => c.targetNodeId !== null) }
+  }
+  return touch({ ...story, nodes })
+}
+
 export function moveChoice(story: Story, nodeId: string, choiceId: string, direction: 'up' | 'down'): Story {
   const node = story.nodes[nodeId]
   if (!node) return story

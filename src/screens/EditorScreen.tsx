@@ -276,7 +276,7 @@ function EditorScreenInner() {
         </Button>
       </header>
 
-      {showIssues && <IssuesPanel issues={issues} onJumpToNode={jumpToNode} />}
+      {showIssues && <IssuesPanel issues={issues} onUpdate={mutate} onJumpToNode={jumpToNode} />}
       {showDescription && <DescriptionPanel story={story} onUpdate={mutate} />}
       {showVariables && <VariablesPanel story={story} onUpdate={mutate} />}
       {showFindReplace && <FindReplacePanel story={story} onUpdate={mutate} onJumpToNode={jumpToNode} />}

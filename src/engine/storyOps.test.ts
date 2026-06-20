@@ -6,6 +6,7 @@ import {
   countVariableUsages,
   createStory,
   deleteChoice,
+  deleteDanglingChoices,
   deleteNode,
   deleteVariable,
   duplicateNode,
@@ -75,6 +76,40 @@ describe('choices', () => {
     const choiceId = story.nodes[startId].choices[0].id
     story = linkChoice(story, startId, choiceId, 'does-not-exist')
     expect(story.nodes[startId].choices[0].targetNodeId).toBeNull()
+  })
+})
+
+describe('deleteDanglingChoices', () => {
+  it('removes only choices with no target across every node', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    const { story: withSecond, nodeId: secondId } = addNode(story)
+    story = withSecond
+
+    story = addChoice(story, startId, 'Linked')
+    story = addChoice(story, startId, 'Dangling 1')
+    story = addChoice(story, secondId, 'Dangling 2')
+    const linkedChoiceId = story.nodes[startId].choices[0].id
+    story = linkChoice(story, startId, linkedChoiceId, secondId)
+
+    story = deleteDanglingChoices(story)
+
+    expect(story.nodes[startId].choices).toHaveLength(1)
+    expect(story.nodes[startId].choices[0].id).toBe(linkedChoiceId)
+    expect(story.nodes[secondId].choices).toHaveLength(0)
+  })
+
+  it('is a no-op when there are no dangling choices', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    const { story: withSecond, nodeId: secondId } = addNode(story)
+    story = withSecond
+    story = addChoice(story, startId, 'Linked')
+    const choiceId = story.nodes[startId].choices[0].id
+    story = linkChoice(story, startId, choiceId, secondId)
+
+    const result = deleteDanglingChoices(story)
+    expect(result.nodes[startId].choices).toHaveLength(1)
   })
 })
 
