@@ -60,6 +60,31 @@ describe('FindReplacePanel', () => {
     expect(result.nodes[startId].text).toContain('медведь')
   })
 
+  it('excludes case-mismatched matches once "Учитывать регистр" is checked', async () => {
+    const { story } = sampleStory()
+    const user = userEvent.setup()
+    render(<FindReplacePanel story={story} onUpdate={() => {}} onJumpToNode={() => {}} />)
+
+    await user.type(screen.getByLabelText('Найти'), 'ВОЛКА')
+    expect(screen.getByText(/Заменить всё \(2\)/)).toBeInTheDocument()
+
+    await user.click(screen.getByLabelText('Учитывать регистр'))
+    expect(screen.getByText('Совпадений не найдено.')).toBeInTheDocument()
+  })
+
+  it('excludes partial-word matches once "Целое слово" is checked', async () => {
+    const { story } = sampleStory()
+    const user = userEvent.setup()
+    render(<FindReplacePanel story={story} onUpdate={() => {}} onJumpToNode={() => {}} />)
+
+    // "волк" matches "волка" as a substring, but not as a whole word.
+    await user.type(screen.getByLabelText('Найти'), 'волк')
+    expect(screen.getByText(/Заменить всё \(2\)/)).toBeInTheDocument()
+
+    await user.click(screen.getByLabelText('Целое слово'))
+    expect(screen.getByText('Совпадений не найдено.')).toBeInTheDocument()
+  })
+
   it('calls onJumpToNode with the matching node id when "Перейти" is clicked', async () => {
     const { story, startId } = sampleStory()
     const onJumpToNode = vi.fn()

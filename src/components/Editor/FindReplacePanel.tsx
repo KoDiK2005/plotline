@@ -22,13 +22,18 @@ const fieldClass =
 export function FindReplacePanel({ story, onUpdate, onJumpToNode }: FindReplacePanelProps) {
   const [query, setQuery] = useState('')
   const [replacement, setReplacement] = useState('')
+  const [caseSensitive, setCaseSensitive] = useState(false)
+  const [wholeWord, setWholeWord] = useState(false)
 
-  const matches = useMemo(() => findMatches(story, query), [story, query])
+  const matches = useMemo(
+    () => findMatches(story, query, { caseSensitive, wholeWord }),
+    [story, query, caseSensitive, wholeWord],
+  )
   const hasQuery = query.trim().length > 0
 
   function handleReplaceAll() {
     if (!hasQuery || matches.length === 0) return
-    onUpdate((s) => replaceAll(s, query, replacement))
+    onUpdate((s) => replaceAll(s, query, replacement, { caseSensitive, wholeWord }))
   }
 
   return (
@@ -56,6 +61,22 @@ export function FindReplacePanel({ story, onUpdate, onJumpToNode }: FindReplaceP
         >
           Заменить всё{matches.length > 0 ? ` (${matches.length})` : ''}
         </Button>
+        <label className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
+          <input
+            type="checkbox"
+            checked={caseSensitive}
+            onChange={(e) => setCaseSensitive(e.target.checked)}
+          />
+          Учитывать регистр
+        </label>
+        <label className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
+          <input
+            type="checkbox"
+            checked={wholeWord}
+            onChange={(e) => setWholeWord(e.target.checked)}
+          />
+          Целое слово
+        </label>
       </div>
 
       {hasQuery && (

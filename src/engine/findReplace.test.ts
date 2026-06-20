@@ -48,6 +48,33 @@ describe('findMatches', () => {
     const nodeMatches = matches.filter((m) => m.nodeId === startId)
     expect(nodeMatches.map((m) => m.field).sort()).toEqual(['choice', 'text'])
   })
+
+  it('respects the caseSensitive option', () => {
+    const { story } = sampleStory()
+    expect(findMatches(story, 'ВОЛКА', { caseSensitive: true })).toEqual([])
+    expect(findMatches(story, 'волка', { caseSensitive: true }).length).toBeGreaterThan(0)
+  })
+
+  it('respects the wholeWord option, excluding partial matches inside a longer word', () => {
+    const { story, startId } = sampleStory()
+    // "волк" is a substring of "волка" but not a whole word there.
+    expect(findMatches(story, 'волк', { wholeWord: true })).toEqual([])
+    expect(findMatches(story, 'волка', { wholeWord: true })).toContainEqual({
+      nodeId: startId,
+      field: 'text',
+      snippet: 'Герой идёт через лес и видит волка.',
+    })
+  })
+
+  it('matches a whole word at the start and end of a field, and combines wholeWord with caseSensitive', () => {
+    const { story, startId } = sampleStory()
+    expect(findMatches(story, 'Лесная', { wholeWord: true })).toContainEqual({
+      nodeId: startId,
+      field: 'title',
+      snippet: 'Лесная тропа',
+    })
+    expect(findMatches(story, 'лесная', { wholeWord: true, caseSensitive: true })).toEqual([])
+  })
 })
 
 describe('replaceAll', () => {
@@ -82,5 +109,18 @@ describe('replaceAll', () => {
     const before = story.updatedAt
     const next = replaceAll(story, 'волк', 'медведь')
     expect(next.updatedAt).toBeGreaterThanOrEqual(before)
+  })
+
+  it('only replaces whole-word matches, leaving partial matches inside longer words untouched', () => {
+    const { story, startId } = sampleStory()
+    const next = replaceAll(story, 'волк', 'медведь', { wholeWord: true })
+    // "волка" should be untouched since "волк" only matches it as a substring.
+    expect(next.nodes[startId].text).toBe('Герой идёт через лес и видит волка.')
+  })
+
+  it('only replaces case-sensitive matches when caseSensitive is set', () => {
+    const { story, startId } = sampleStory()
+    const next = replaceAll(story, 'ТРОПА', 'дорога', { caseSensitive: true })
+    expect(next.nodes[startId].title).toBe('Лесная тропа')
   })
 })
