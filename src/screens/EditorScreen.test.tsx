@@ -436,6 +436,20 @@ describe('EditorScreen', () => {
     expect(screen.getByText('⚠ Недостижима')).toBeInTheDocument()
   })
 
+  it('shows an ending badge on the canvas for a scene with no linked choices', async () => {
+    let story = createStory('Edit Me')
+    const startId = story.startNodeId!
+    const { story: next, nodeId: secondId } = addNode(story)
+    story = next
+    story = addChoice(story, startId, 'Go on')
+    story = linkChoice(story, startId, story.nodes[startId].choices[0].id, secondId)
+    setupStory(story)
+    render(<EditorScreen />)
+
+    const badges = screen.getAllByText('🏁 Концовка')
+    expect(badges).toHaveLength(1)
+  })
+
   it('opens the find & replace panel and replaces text across the story in one undo step', async () => {
     let story = createStory('Edit Me')
     const startId = story.startNodeId!

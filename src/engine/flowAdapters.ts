@@ -1,17 +1,19 @@
 import type { Edge, Node } from 'reactflow'
 import type { Story } from '../types/story'
-import { reachableNodeIds } from './traverse'
+import { getEndingNodeIds, reachableNodeIds } from './traverse'
 
 export interface SceneNodeData {
   title: string
   text: string
   isStart: boolean
   isUnreachable: boolean
+  isEnding: boolean
   choices: { id: string; text: string; linked: boolean; conditional: boolean; hasEffects: boolean }[]
 }
 
 export function storyToFlowNodes(story: Story): Node<SceneNodeData>[] {
   const reachable = reachableNodeIds(story)
+  const endings = new Set(getEndingNodeIds(story))
   return Object.values(story.nodes).map((node) => ({
     id: node.id,
     type: 'scene',
@@ -21,6 +23,7 @@ export function storyToFlowNodes(story: Story): Node<SceneNodeData>[] {
       text: node.text,
       isStart: node.id === story.startNodeId,
       isUnreachable: !reachable.has(node.id),
+      isEnding: endings.has(node.id),
       choices: node.choices.map((c) => ({
         id: c.id,
         text: c.text,

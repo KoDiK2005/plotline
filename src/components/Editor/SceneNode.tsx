@@ -26,6 +26,14 @@ export function SceneNode({ data, selected }: NodeProps<SceneNodeData>) {
             ⚠ Недостижима
           </span>
         )}
+        {data.isEnding && (
+          <span
+            title="У этой сцены нет рабочих переходов — это концовка"
+            className="mb-1 ml-1 inline-block rounded bg-violet-500/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-violet-600 dark:text-violet-400"
+          >
+            🏁 Концовка
+          </span>
+        )}
         <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
           {data.title || 'Без названия'}
         </p>
