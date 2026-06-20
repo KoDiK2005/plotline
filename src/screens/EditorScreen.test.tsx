@@ -2,7 +2,15 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EditorScreen } from './EditorScreen'
-import { addChoice, addNode, createStory, linkChoice, updateNode } from '../engine/storyOps'
+import {
+  addChoice,
+  addNode,
+  addVariable,
+  createStory,
+  linkChoice,
+  setChoiceCondition,
+  updateNode,
+} from '../engine/storyOps'
 import type { Story } from '../types/story'
 import { useLibraryStore } from '../store/useLibraryStore'
 import { useUIStore } from '../store/useUIStore'
@@ -327,6 +335,67 @@ describe('EditorScreen', () => {
       comparator: 'eq',
       value: 1,
     })
+  })
+
+  it('deletes an unused variable immediately, without a confirm dialog', async () => {
+    let story = createStory('Edit Me')
+    const { story: withVar } = addVariable(story, 'Unused', 0)
+    story = withVar
+    setupStory(story)
+    const user = userEvent.setup()
+    render(<EditorScreen />)
+
+    await user.click(screen.getByRole('button', { name: 'Переменные (1)' }))
+    await user.click(screen.getByRole('button', { name: 'Удалить переменную' }))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(useLibraryStore.getState().stories[story.id].variables).toHaveLength(0)
+  })
+
+  it('asks for confirmation before deleting a variable referenced by a choice condition', async () => {
+    let story = createStory('Edit Me')
+    const startId = story.startNodeId!
+    const { story: withVar, variableId } = addVariable(story, 'Trust', 0)
+    story = withVar
+    story = addChoice(story, startId, 'Confide')
+    const choiceId = story.nodes[startId].choices[0].id
+    story = setChoiceCondition(story, startId, choiceId, { variableId, comparator: 'gte', value: 1 })
+    setupStory(story)
+    const user = userEvent.setup()
+    render(<EditorScreen />)
+
+    await user.click(screen.getByRole('button', { name: 'Переменные (1)' }))
+    await user.click(screen.getByRole('button', { name: 'Удалить переменную' }))
+
+    expect(screen.getByText('Удалить переменную?')).toBeInTheDocument()
+    expect(useLibraryStore.getState().stories[story.id].variables).toHaveLength(1)
+
+    await user.click(screen.getByRole('button', { name: 'Удалить' }))
+
+    expect(screen.queryByText('Удалить переменную?')).not.toBeInTheDocument()
+    const updatedStory = useLibraryStore.getState().stories[story.id]
+    expect(updatedStory.variables).toHaveLength(0)
+    expect(updatedStory.nodes[startId].choices[0].condition).toBeNull()
+  })
+
+  it('cancels the confirm dialog without deleting the in-use variable', async () => {
+    let story = createStory('Edit Me')
+    const startId = story.startNodeId!
+    const { story: withVar, variableId } = addVariable(story, 'Trust', 0)
+    story = withVar
+    story = addChoice(story, startId, 'Confide')
+    const choiceId = story.nodes[startId].choices[0].id
+    story = setChoiceCondition(story, startId, choiceId, { variableId, comparator: 'gte', value: 1 })
+    setupStory(story)
+    const user = userEvent.setup()
+    render(<EditorScreen />)
+
+    await user.click(screen.getByRole('button', { name: 'Переменные (1)' }))
+    await user.click(screen.getByRole('button', { name: 'Удалить переменную' }))
+    await user.click(screen.getByRole('button', { name: 'Отмена' }))
+
+    expect(screen.queryByText('Удалить переменную?')).not.toBeInTheDocument()
+    expect(useLibraryStore.getState().stories[story.id].variables).toHaveLength(1)
   })
 
   it('shows an unreachable badge on the canvas for a newly added scene with no incoming links', async () => {

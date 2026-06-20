@@ -209,6 +209,17 @@ export function deleteVariable(story: Story, variableId: string): Story {
   return touch({ ...story, nodes, variables })
 }
 
+export function countVariableUsages(story: Story, variableId: string): number {
+  let count = 0
+  for (const node of Object.values(story.nodes)) {
+    for (const choice of node.choices) {
+      if (choice.condition?.variableId === variableId) count++
+      count += choice.effects.filter((effect) => effect.variableId === variableId).length
+    }
+  }
+  return count
+}
+
 export function applyPositions(story: Story, positions: Record<string, { x: number; y: number }>): Story {
   const nodes = { ...story.nodes }
   for (const [id, position] of Object.entries(positions)) {

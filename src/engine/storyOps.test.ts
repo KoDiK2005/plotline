@@ -3,6 +3,7 @@ import {
   addChoice,
   addNode,
   addVariable,
+  countVariableUsages,
   createStory,
   deleteChoice,
   deleteNode,
@@ -254,6 +255,31 @@ describe('variables', () => {
     story = deleteVariable(story, variableId)
     expect(story.nodes[startId].choices[0].condition).toBeNull()
     expect(story.nodes[startId].choices[0].effects).toEqual([])
+  })
+
+  it('counts how many conditions and effects reference a variable', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    const { story: withVar, variableId } = addVariable(story, 'Key', 0)
+    story = withVar
+    expect(countVariableUsages(story, variableId)).toBe(0)
+
+    story = addChoice(story, startId, 'Use key')
+    const choiceId = story.nodes[startId].choices[0].id
+    story = setChoiceCondition(story, startId, choiceId, { variableId, comparator: 'gte', value: 1 })
+    story = setChoiceEffects(story, startId, choiceId, [
+      { variableId, op: 'set', value: 1 },
+      { variableId, op: 'add', value: 1 },
+    ])
+
+    expect(countVariableUsages(story, variableId)).toBe(3)
+  })
+
+  it('returns 0 for a variable with no matching usages', () => {
+    let story = createStory()
+    const { story: withVar, variableId } = addVariable(story, 'Unused', 0)
+    story = withVar
+    expect(countVariableUsages(story, variableId)).toBe(0)
   })
 })
 

@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import type { Story, VariableType } from '../../types/story'
-import { addVariable, deleteVariable, updateVariable } from '../../engine/storyOps'
+import { addVariable, countVariableUsages, deleteVariable, updateVariable } from '../../engine/storyOps'
 import { Button } from '../Button'
+import { ConfirmDialog } from '../ConfirmDialog'
 
 interface VariablesPanelProps {
   story: Story
@@ -12,6 +14,17 @@ const fieldClass =
   'focus:border-violet-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100'
 
 export function VariablesPanel({ story, onUpdate }: VariablesPanelProps) {
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const pendingDeleteVariable = story.variables.find((v) => v.id === pendingDeleteId)
+
+  function requestDelete(variableId: string) {
+    if (countVariableUsages(story, variableId) > 0) {
+      setPendingDeleteId(variableId)
+    } else {
+      onUpdate((s) => deleteVariable(s, variableId))
+    }
+  }
+
   return (
     <div className="border-b border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
       <div className="mb-2 flex items-center justify-between">
@@ -89,7 +102,7 @@ export function VariablesPanel({ story, onUpdate }: VariablesPanelProps) {
                   />
                 )}
                 <button
-                  onClick={() => onUpdate((s) => deleteVariable(s, variable.id))}
+                  onClick={() => requestDelete(variable.id)}
                   className="px-1 text-xs text-red-500 hover:text-red-600"
                   title="Удалить переменную"
                   aria-label="Удалить переменную"
@@ -100,6 +113,18 @@ export function VariablesPanel({ story, onUpdate }: VariablesPanelProps) {
             )
           })}
         </div>
+      )}
+
+      {pendingDeleteVariable && (
+        <ConfirmDialog
+          title="Удалить переменную?"
+          message={`Переменная «${pendingDeleteVariable.name}» используется в условиях или эффектах вариантов (${countVariableUsages(story, pendingDeleteVariable.id)} раз). После удаления эти условия и эффекты будут сняты.`}
+          onCancel={() => setPendingDeleteId(null)}
+          onConfirm={() => {
+            onUpdate((s) => deleteVariable(s, pendingDeleteVariable.id))
+            setPendingDeleteId(null)
+          }}
+        />
       )}
     </div>
   )
