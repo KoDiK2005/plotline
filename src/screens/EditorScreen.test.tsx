@@ -272,6 +272,19 @@ describe('EditorScreen', () => {
     expect(useLibraryStore.getState().stories[story.id]).toEqual(story)
   })
 
+  it('opens the description panel and edits the story description', async () => {
+    const story = createStory('Edit Me')
+    setupStory(story)
+    const user = userEvent.setup()
+    render(<EditorScreen />)
+
+    expect(story.description).toBe('')
+    await user.click(screen.getByRole('button', { name: 'Описание' }))
+    await user.type(screen.getByLabelText('Описание истории'), 'Короткая история про лес.')
+
+    expect(useLibraryStore.getState().stories[story.id].description).toBe('Короткая история про лес.')
+  })
+
   it('opens the variables panel and adds a variable', async () => {
     const story = createStory('Edit Me')
     setupStory(story)

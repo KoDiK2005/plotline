@@ -17,6 +17,7 @@ import ReactFlow, {
 import { Button } from '../components/Button'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { StatPill } from '../components/StatPill'
+import { DescriptionPanel } from '../components/Editor/DescriptionPanel'
 import { FindReplacePanel } from '../components/Editor/FindReplacePanel'
 import { IssuesPanel } from '../components/Editor/IssuesPanel'
 import { NodeInspector } from '../components/Editor/NodeInspector'
@@ -51,6 +52,7 @@ function EditorScreenInner() {
   const [nodes, setNodes] = useNodesState<SceneNodeData>([])
   const [edges, setEdges] = useEdgesState<Edge>([])
   const [showIssues, setShowIssues] = useState(false)
+  const [showDescription, setShowDescription] = useState(false)
   const [showVariables, setShowVariables] = useState(false)
   const [showFindReplace, setShowFindReplace] = useState(false)
   const [confirmDeleteNodeId, setConfirmDeleteNodeId] = useState<string | null>(null)
@@ -249,6 +251,9 @@ function EditorScreenInner() {
         >
           Авторасстановка
         </Button>
+        <Button variant="ghost" onClick={() => setShowDescription((v) => !v)}>
+          Описание
+        </Button>
         <Button variant="ghost" onClick={() => setShowVariables((v) => !v)}>
           Переменные{story.variables.length > 0 ? ` (${story.variables.length})` : ''}
         </Button>
@@ -264,6 +269,7 @@ function EditorScreenInner() {
       </header>
 
       {showIssues && <IssuesPanel issues={issues} onJumpToNode={jumpToNode} />}
+      {showDescription && <DescriptionPanel story={story} onUpdate={mutate} />}
       {showVariables && <VariablesPanel story={story} onUpdate={mutate} />}
       {showFindReplace && <FindReplacePanel story={story} onUpdate={mutate} onJumpToNode={jumpToNode} />}
 
