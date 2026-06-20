@@ -45,6 +45,22 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
     () => storyToMapNodes(story, visitedSet, playState?.currentNodeId ?? null),
     [story, visitedSet, playState],
   )
+  const choices = useMemo(() => (playState ? availableChoices(story, playState) : []), [story, playState])
+  const ending = playState ? isEnding(story, playState) : false
+
+  useEffect(() => {
+    if (showMap || ending || choices.length === 0) return
+    function onKeyDown(e: KeyboardEvent) {
+      const target = e.target as HTMLElement | null
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return
+      const index = Number(e.key) - 1
+      if (!Number.isInteger(index) || index < 0 || index >= choices.length) return
+      e.preventDefault()
+      setPlayState((state) => (state ? choose(story, state, choices[index].id) : state))
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [showMap, ending, choices, story])
 
   if (!playState) {
     return (
@@ -65,8 +81,6 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
   }
 
   const node = story.nodes[playState.currentNodeId]
-  const choices = availableChoices(story, playState)
-  const ending = isEnding(story, playState)
 
   return (
     <div className="flex h-screen flex-col">
@@ -126,13 +140,21 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              {choices.map((choice) => (
+              {choices.map((choice, index) => (
                 <button
                   key={choice.id}
                   onClick={() => setPlayState((state) => (state ? choose(story, state, choice.id) : state))}
-                  className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-left text-sm font-medium text-slate-800 transition-colors hover:border-violet-400 hover:bg-violet-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                  className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 text-left text-sm font-medium text-slate-800 transition-colors hover:border-violet-400 hover:bg-violet-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                 >
-                  {choice.text}
+                  {index < 9 && (
+                    <kbd
+                      aria-hidden="true"
+                      className="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-slate-300 text-[10px] font-semibold text-slate-400 dark:border-slate-700 dark:text-slate-500"
+                    >
+                      {index + 1}
+                    </kbd>
+                  )}
+                  <span>{choice.text}</span>
                 </button>
               ))}
             </div>

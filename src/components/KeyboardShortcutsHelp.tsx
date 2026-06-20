@@ -22,6 +22,10 @@ const GROUPS: ShortcutGroup[] = [
       { keys: 'Ctrl/⌘ + Shift + Z, Ctrl/⌘ + Y', description: 'Повторить отменённое изменение' },
     ],
   },
+  {
+    title: 'Плеер',
+    shortcuts: [{ keys: '1–9', description: 'Выбрать вариант под этим номером' }],
+  },
 ]
 
 interface KeyboardShortcutsHelpProps {

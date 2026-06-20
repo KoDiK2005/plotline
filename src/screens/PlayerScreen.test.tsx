@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { PlayerScreen } from './PlayerScreen'
@@ -200,6 +200,32 @@ describe('PlayerScreen', () => {
     await user.click(screen.getByRole('button', { name: 'Be brave' }))
 
     expect(await screen.findByText('Концовок найдено: 1/2')).toBeInTheDocument()
+  })
+
+  it('selects a choice by pressing its number key', async () => {
+    const { story } = branchingStory()
+    setupStory(story)
+    render(<PlayerScreen />)
+
+    expect(screen.getByRole('heading', { name: 'Начало' })).toBeInTheDocument()
+
+    fireEvent.keyDown(window, { key: '2' })
+
+    expect(await screen.findByRole('heading', { name: 'Новая сцена' })).toBeInTheDocument()
+    expect(screen.getByText(/Пройденный путь \(2\)/)).toBeInTheDocument()
+  })
+
+  it('ignores a number key press once the story has reached an ending', async () => {
+    const { story } = branchingStory()
+    setupStory(story)
+    const user = userEvent.setup()
+    render(<PlayerScreen />)
+
+    await user.click(screen.getByRole('button', { name: 'Be brave' }))
+    expect(await screen.findByText('Конец истории')).toBeInTheDocument()
+
+    fireEvent.keyDown(window, { key: '1' })
+    expect(screen.getByText('Конец истории')).toBeInTheDocument()
   })
 
   it('shows a fallback message instead of crashing when there is no valid start node', () => {
