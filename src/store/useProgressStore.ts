@@ -1,11 +1,13 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import type { PlayState } from '../engine/play'
 
 export interface StoryProgress {
   visitedNodeIds: string[]
   discoveredEndingIds: string[]
   playCount: number
   lastPlayedAt: number
+  savedPlay: PlayState | null
 }
 
 interface ProgressState {
@@ -13,6 +15,7 @@ interface ProgressState {
   recordVisit: (storyId: string, nodeId: string) => void
   recordEnding: (storyId: string, nodeId: string) => void
   recordPlayStart: (storyId: string) => void
+  savePlayState: (storyId: string, playState: PlayState | null) => void
   clearProgress: (storyId: string) => void
   getProgress: (storyId: string) => StoryProgress
 }
@@ -22,6 +25,7 @@ const emptyProgress: StoryProgress = {
   discoveredEndingIds: [],
   playCount: 0,
   lastPlayedAt: 0,
+  savedPlay: null,
 }
 
 export const useProgressStore = create<ProgressState>()(
@@ -71,6 +75,13 @@ export const useProgressStore = create<ProgressState>()(
               },
             },
           }
+        })
+      },
+
+      savePlayState: (storyId, playState) => {
+        set((state) => {
+          const current = state.progress[storyId] ?? emptyProgress
+          return { progress: { ...state.progress, [storyId]: { ...current, savedPlay: playState } } }
         })
       },
 

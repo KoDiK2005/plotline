@@ -228,6 +228,67 @@ describe('PlayerScreen', () => {
     expect(screen.getByText('Конец истории')).toBeInTheDocument()
   })
 
+  it('resumes from the saved play state on mount instead of restarting from the beginning', async () => {
+    // "Pick up the key" leads to a non-ending node, so the in-progress state is still saved.
+    const { story } = conditionalStory()
+    setupStory(story)
+    const user = userEvent.setup()
+    const { unmount } = render(<PlayerScreen />)
+
+    await user.click(screen.getByRole('button', { name: 'Pick up the key' }))
+    expect(await screen.findByRole('button', { name: 'Go back to the door' })).toBeInTheDocument()
+    unmount()
+
+    render(<PlayerScreen />)
+    expect(await screen.findByRole('button', { name: 'Go back to the door' })).toBeInTheDocument()
+    expect(screen.getByText('↻ Продолжаем с места, где вы остановились в прошлый раз.')).toBeInTheDocument()
+  })
+
+  it('does not show a "resumed" banner on a fresh playthrough with no saved progress', () => {
+    const { story } = branchingStory()
+    setupStory(story)
+    render(<PlayerScreen />)
+
+    expect(
+      screen.queryByText('↻ Продолжаем с места, где вы остановились в прошлый раз.'),
+    ).not.toBeInTheDocument()
+  })
+
+  it('clears the saved play state once an ending is reached, so the next mount restarts from the beginning', async () => {
+    const { story } = branchingStory()
+    setupStory(story)
+    const user = userEvent.setup()
+    const { unmount } = render(<PlayerScreen />)
+
+    await user.click(screen.getByRole('button', { name: 'Be brave' }))
+    expect(await screen.findByText('Конец истории')).toBeInTheDocument()
+    unmount()
+
+    render(<PlayerScreen />)
+    expect(await screen.findByRole('heading', { name: 'Начало' })).toBeInTheDocument()
+    expect(
+      screen.queryByText('↻ Продолжаем с места, где вы остановились в прошлый раз.'),
+    ).not.toBeInTheDocument()
+  })
+
+  it('clears the saved play state when "Начать заново" is used, so a later mount does not resume', async () => {
+    const { story } = conditionalStory()
+    setupStory(story)
+    const user = userEvent.setup()
+    const { unmount } = render(<PlayerScreen />)
+
+    await user.click(screen.getByRole('button', { name: 'Pick up the key' }))
+    await screen.findByRole('button', { name: 'Go back to the door' })
+    await user.click(screen.getByRole('button', { name: 'Начать заново' }))
+    unmount()
+
+    render(<PlayerScreen />)
+    expect(await screen.findByRole('heading', { name: 'Начало' })).toBeInTheDocument()
+    expect(
+      screen.queryByText('↻ Продолжаем с места, где вы остановились в прошлый раз.'),
+    ).not.toBeInTheDocument()
+  })
+
   it('shows a fallback message instead of crashing when there is no valid start node', () => {
     const story = { ...createStory('No Start'), startNodeId: null }
     setupStory(story)

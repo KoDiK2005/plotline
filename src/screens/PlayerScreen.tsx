@@ -23,10 +23,12 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
   const recordVisit = useProgressStore((s) => s.recordVisit)
   const recordEnding = useProgressStore((s) => s.recordEnding)
   const recordPlayStart = useProgressStore((s) => s.recordPlayStart)
+  const savePlayState = useProgressStore((s) => s.savePlayState)
   const progress = useProgressStore((s) => s.getProgress(story.id))
 
-  const [playState, setPlayState] = useState<PlayState | null>(() => startPlay(story))
+  const [playState, setPlayState] = useState<PlayState | null>(() => progress.savedPlay ?? startPlay(story))
   const [showMap, setShowMap] = useState(false)
+  const [showResumed] = useState(() => (progress.savedPlay?.history.length ?? 0) > 1)
 
   useEffect(() => {
     recordPlayStart(story.id)
@@ -35,8 +37,13 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
   useEffect(() => {
     if (!playState) return
     recordVisit(story.id, playState.currentNodeId)
-    if (isEnding(story, playState)) recordEnding(story.id, playState.currentNodeId)
-  }, [story, playState, recordVisit, recordEnding])
+    if (isEnding(story, playState)) {
+      recordEnding(story.id, playState.currentNodeId)
+      savePlayState(story.id, null)
+    } else {
+      savePlayState(story.id, playState)
+    }
+  }, [story, playState, recordVisit, recordEnding, savePlayState])
 
   const stats = useMemo(() => getStoryStats(story), [story])
   const mapEdges = useMemo(() => storyToFlowEdges(story), [story])
@@ -122,6 +129,11 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
         </div>
       ) : (
         <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 overflow-y-auto px-4 py-8">
+          {showResumed && (
+            <p className="rounded-lg bg-violet-500/10 px-3 py-2 text-xs text-violet-600 dark:text-violet-400">
+              ↻ Продолжаем с места, где вы остановились в прошлый раз.
+            </p>
+          )}
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">{node.title}</h2>
             <p className="mt-3 whitespace-pre-line leading-relaxed text-slate-700 dark:text-slate-300">
