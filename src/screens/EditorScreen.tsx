@@ -251,6 +251,14 @@ function EditorScreenInner() {
         >
           Авторасстановка
         </Button>
+        <Button
+          variant="ghost"
+          disabled={!story.startNodeId}
+          onClick={() => story.startNodeId && jumpToNode(story.startNodeId)}
+          title="Перейти к стартовой сцене"
+        >
+          ★ К старту
+        </Button>
         <Button variant="ghost" onClick={() => setShowDescription((v) => !v)}>
           Описание
         </Button>

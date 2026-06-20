@@ -436,6 +436,25 @@ describe('EditorScreen', () => {
     expect(screen.getByText('⚠ Недостижима')).toBeInTheDocument()
   })
 
+  it('jumps to and selects the start node when "К старту" is clicked', async () => {
+    let story = createStory('Edit Me')
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { title: 'Старт сцены' })
+    const { story: next, nodeId: otherId } = addNode(story)
+    story = next
+    story = updateNode(story, otherId, { title: 'Другая сцена' })
+    setupStory(story)
+    const user = userEvent.setup()
+    render(<EditorScreen />)
+
+    useUIStore.getState().selectNode(otherId)
+    await screen.findByDisplayValue('Другая сцена')
+
+    await user.click(screen.getByRole('button', { name: /К старту/ }))
+
+    expect(await screen.findByDisplayValue('Старт сцены')).toBeInTheDocument()
+  })
+
   it('shows an ending badge on the canvas for a scene with no linked choices', async () => {
     let story = createStory('Edit Me')
     const startId = story.startNodeId!
