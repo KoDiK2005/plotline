@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { storyToFlowNodes } from './flowAdapters'
-import { addChoice, addNode, createStory, linkChoice } from './storyOps'
+import { addChoice, addNode, createStory, linkChoice, updateNode } from './storyOps'
 
 describe('storyToFlowNodes', () => {
   it('marks the start node and nodes reachable from it as not unreachable', () => {
@@ -55,5 +55,20 @@ describe('storyToFlowNodes', () => {
 
     const nodes = storyToFlowNodes(story)
     expect(nodes.find((n) => n.id === startId)!.data.isEnding).toBe(true)
+  })
+
+  it('includes the word count of the node text', () => {
+    let story = createStory('Test')
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { text: 'four little words here' })
+
+    const nodes = storyToFlowNodes(story)
+    expect(nodes.find((n) => n.id === startId)!.data.wordCount).toBe(4)
+  })
+
+  it('counts zero words for a node with empty text', () => {
+    const story = createStory('Test')
+    const nodes = storyToFlowNodes(story)
+    expect(nodes[0].data.wordCount).toBe(0)
   })
 })

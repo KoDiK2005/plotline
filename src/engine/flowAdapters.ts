@@ -1,6 +1,7 @@
 import type { Edge, Node } from 'reactflow'
 import type { Story } from '../types/story'
 import { getEndingNodeIds, reachableNodeIds } from './traverse'
+import { countWords } from './readingTime'
 
 export interface SceneNodeData {
   title: string
@@ -8,6 +9,7 @@ export interface SceneNodeData {
   isStart: boolean
   isUnreachable: boolean
   isEnding: boolean
+  wordCount: number
   choices: { id: string; text: string; linked: boolean; conditional: boolean; hasEffects: boolean }[]
 }
 
@@ -24,6 +26,7 @@ export function storyToFlowNodes(story: Story): Node<SceneNodeData>[] {
       isStart: node.id === story.startNodeId,
       isUnreachable: !reachable.has(node.id),
       isEnding: endings.has(node.id),
+      wordCount: countWords(node.text),
       choices: node.choices.map((c) => ({
         id: c.id,
         text: c.text,

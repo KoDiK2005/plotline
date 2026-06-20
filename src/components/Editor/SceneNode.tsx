@@ -1,6 +1,15 @@
 import { Handle, Position, type NodeProps } from 'reactflow'
 import type { SceneNodeData } from '../../engine/flowAdapters'
 
+function wordCountLabel(count: number): string {
+  const mod10 = count % 10
+  const mod100 = count % 100
+  if (mod100 >= 11 && mod100 <= 14) return 'слов'
+  if (mod10 === 1) return 'слово'
+  if (mod10 >= 2 && mod10 <= 4) return 'слова'
+  return 'слов'
+}
+
 export function SceneNode({ data, selected }: NodeProps<SceneNodeData>) {
   const borderClass = selected
     ? 'border-violet-500'
@@ -39,6 +48,12 @@ export function SceneNode({ data, selected }: NodeProps<SceneNodeData>) {
         </p>
         <p className="mt-0.5 line-clamp-2 text-xs text-slate-500 dark:text-slate-500">
           {data.text || 'Нет текста…'}
+        </p>
+        <p
+          title="Количество слов в тексте сцены"
+          className="mt-1 text-right text-[10px] text-slate-400 dark:text-slate-600"
+        >
+          {data.wordCount} {wordCountLabel(data.wordCount)}
         </p>
       </div>
 

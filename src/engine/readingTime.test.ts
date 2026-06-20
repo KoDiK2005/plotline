@@ -1,6 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import { estimateReadingMinutes } from './readingTime'
+import { countWords, estimateReadingMinutes } from './readingTime'
 import { addChoice, addNode, createStory, linkChoice, updateNode } from './storyOps'
+
+describe('countWords', () => {
+  it('returns 0 for empty or whitespace-only text', () => {
+    expect(countWords('')).toBe(0)
+    expect(countWords('   ')).toBe(0)
+  })
+
+  it('counts words separated by any amount of whitespace', () => {
+    expect(countWords('один два   три\nчетыре')).toBe(4)
+  })
+})
 
 describe('estimateReadingMinutes', () => {
   it('returns 1 minute for an empty or very short story', () => {
