@@ -13,9 +13,19 @@ interface StoryCardProps {
   onExport: () => void
   onExportHtml: () => void
   onDelete: () => void
+  onResetProgress: () => void
 }
 
-export function StoryCard({ story, onPlay, onEdit, onDuplicate, onExport, onExportHtml, onDelete }: StoryCardProps) {
+export function StoryCard({
+  story,
+  onPlay,
+  onEdit,
+  onDuplicate,
+  onExport,
+  onExportHtml,
+  onDelete,
+  onResetProgress,
+}: StoryCardProps) {
   const stats = getStoryStats(story)
   const readingMinutes = estimateReadingMinutes(story)
   const progress = useProgressStore((s) => s.getProgress(story.id))
@@ -61,6 +71,15 @@ export function StoryCard({ story, onPlay, onEdit, onDuplicate, onExport, onExpo
           Удалить
         </Button>
       </div>
+      {progress.playCount > 0 && (
+        <Button
+          variant="ghost"
+          className="mt-1 px-2 py-1 text-xs text-slate-500 dark:text-slate-500"
+          onClick={onResetProgress}
+        >
+          Сбросить прогресс
+        </Button>
+      )}
     </div>
   )
 }

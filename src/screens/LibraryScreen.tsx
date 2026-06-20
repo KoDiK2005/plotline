@@ -21,6 +21,7 @@ export function LibraryScreen() {
   const duplicateStory = useLibraryStore((s) => s.duplicateStory)
   const importStory = useLibraryStore((s) => s.importStory)
   const progress = useProgressStore((s) => s.progress)
+  const clearProgress = useProgressStore((s) => s.clearProgress)
   const openEditor = useUIStore((s) => s.openEditor)
   const openPlayer = useUIStore((s) => s.openPlayer)
   const openShortcuts = useUIStore((s) => s.openShortcuts)
@@ -28,6 +29,7 @@ export function LibraryScreen() {
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<SortOption>('updated')
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [pendingResetProgressId, setPendingResetProgressId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [showAchievements, setShowAchievements] = useState(false)
   const [showNewStory, setShowNewStory] = useState(false)
@@ -169,6 +171,7 @@ export function LibraryScreen() {
               onExport={() => downloadJson(`${slugifyFilename(story.title)}.json`, story)}
               onExportHtml={() => downloadText(`${slugifyFilename(story.title)}.html`, buildStandaloneHtml(story), 'text/html')}
               onDelete={() => setPendingDeleteId(story.id)}
+              onResetProgress={() => setPendingResetProgressId(story.id)}
             />
           ))}
         </div>
@@ -182,6 +185,19 @@ export function LibraryScreen() {
           onConfirm={() => {
             deleteStory(pendingDeleteId)
             setPendingDeleteId(null)
+          }}
+        />
+      )}
+
+      {pendingResetProgressId && (
+        <ConfirmDialog
+          title="Сбросить прогресс?"
+          message={`Посещённые сцены, найденные концовки и число прохождений «${stories[pendingResetProgressId]?.title}» будут забыты.`}
+          confirmLabel="Сбросить"
+          onCancel={() => setPendingResetProgressId(null)}
+          onConfirm={() => {
+            clearProgress(pendingResetProgressId)
+            setPendingResetProgressId(null)
           }}
         />
       )}

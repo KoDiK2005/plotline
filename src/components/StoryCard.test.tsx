@@ -21,6 +21,7 @@ function renderCard(overrides: Partial<Parameters<typeof StoryCard>[0]> = {}) {
     onExport: vi.fn(),
     onExportHtml: vi.fn(),
     onDelete: vi.fn(),
+    onResetProgress: vi.fn(),
   }
   render(
     <StoryCard
@@ -31,6 +32,7 @@ function renderCard(overrides: Partial<Parameters<typeof StoryCard>[0]> = {}) {
       onExport={overrides.onExport ?? handlers.onExport}
       onExportHtml={overrides.onExportHtml ?? handlers.onExportHtml}
       onDelete={overrides.onDelete ?? handlers.onDelete}
+      onResetProgress={overrides.onResetProgress ?? handlers.onResetProgress}
     />,
   )
   return { story, ...handlers }
@@ -132,5 +134,20 @@ describe('StoryCard', () => {
     const { onDelete } = renderCard()
     await user.click(screen.getByRole('button', { name: 'Удалить' }))
     expect(onDelete).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not render the "Сбросить прогресс" button when the story has never been played', () => {
+    renderCard()
+    expect(screen.queryByRole('button', { name: 'Сбросить прогресс' })).not.toBeInTheDocument()
+  })
+
+  it('renders the "Сбросить прогресс" button and calls onResetProgress once the story has been played', async () => {
+    const story = createStory('Test Story')
+    useProgressStore.getState().recordPlayStart(story.id)
+    const user = userEvent.setup()
+    const { onResetProgress } = renderCard({ story })
+
+    await user.click(screen.getByRole('button', { name: 'Сбросить прогресс' }))
+    expect(onResetProgress).toHaveBeenCalledTimes(1)
   })
 })

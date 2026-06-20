@@ -169,6 +169,25 @@ describe('LibraryScreen', () => {
     expect(Object.keys(useLibraryStore.getState().stories).length).toBe(storyCountBefore)
   })
 
+  it('resets a story\'s progress via the confirm dialog once it has been played', async () => {
+    const story = Object.values(useLibraryStore.getState().stories).find((s) => s.title === 'Ключ от чердака')!
+    useProgressStore.getState().recordPlayStart(story.id)
+    useProgressStore.getState().recordEnding(story.id, story.startNodeId!)
+
+    const user = userEvent.setup()
+    render(<LibraryScreen />)
+
+    const card = screen.getByText('Ключ от чердака').closest('div')!
+    await user.click(within(card).getByRole('button', { name: 'Сбросить прогресс' }))
+
+    expect(screen.getByText('Сбросить прогресс?')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Сбросить' }))
+
+    expect(screen.queryByText('Сбросить прогресс?')).not.toBeInTheDocument()
+    expect(useProgressStore.getState().getProgress(story.id).playCount).toBe(0)
+    expect(useProgressStore.getState().getProgress(story.id).discoveredEndingIds).toHaveLength(0)
+  })
+
   it('imports a valid story file and increases the story count', async () => {
     render(<LibraryScreen />)
 
