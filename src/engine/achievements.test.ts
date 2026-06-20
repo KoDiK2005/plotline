@@ -113,4 +113,56 @@ describe('computeAchievements', () => {
     })
     expect(atThreshold.has('explorer')).toBe(true)
   })
+
+  it('reports null progress for story-dependent achievements on an empty library', () => {
+    const statuses = computeAchievements([], {})
+    for (const id of ['collector', 'completionist', 'architect']) {
+      expect(statuses.find((a) => a.id === id)!.progress).toBeNull()
+    }
+  })
+
+  it('reports null progress once an achievement is unlocked, even if getProgress could compute a value', () => {
+    const story = createStory('Played')
+    const statuses = computeAchievements([story], {
+      [story.id]: { visitedNodeIds: [], discoveredEndingIds: [], playCount: 10 },
+    })
+    const veteran = statuses.find((a) => a.id === 'veteran')!
+    expect(veteran.unlocked).toBe(true)
+    expect(veteran.progress).toBeNull()
+  })
+
+  it('reports current/target progress for "collector" using the story closest to completion', () => {
+    const { story, endA } = endingsStory()
+    const statuses = computeAchievements([story], {
+      [story.id]: { visitedNodeIds: [], discoveredEndingIds: [endA], playCount: 1 },
+    })
+    expect(statuses.find((a) => a.id === 'collector')!.progress).toEqual({ current: 1, target: 2 })
+  })
+
+  it('reports current/target progress for "completionist" as count of fully-completed stories', () => {
+    const { story: s1, endA: a1, endB: b1 } = endingsStory('One')
+    const { story: s2 } = endingsStory('Two')
+    const statuses = computeAchievements([s1, s2], {
+      [s1.id]: { visitedNodeIds: [], discoveredEndingIds: [a1, b1], playCount: 1 },
+    })
+    expect(statuses.find((a) => a.id === 'completionist')!.progress).toEqual({ current: 1, target: 2 })
+  })
+
+  it('reports current/target progress for "architect" capped at the target', () => {
+    let story = createStory('Big')
+    for (let i = 0; i < 4; i++) {
+      story = addNode(story).story
+    }
+    const statuses = computeAchievements([story], {})
+    expect(statuses.find((a) => a.id === 'architect')!.progress).toEqual({ current: 5, target: 10 })
+  })
+
+  it('reports current/target progress for "veteran" and "explorer" while still locked', () => {
+    const story = createStory('Played')
+    const statuses = computeAchievements([story], {
+      [story.id]: { visitedNodeIds: Array.from({ length: 15 }, (_, i) => `n${i}`), discoveredEndingIds: [], playCount: 4 },
+    })
+    expect(statuses.find((a) => a.id === 'veteran')!.progress).toEqual({ current: 4, target: 10 })
+    expect(statuses.find((a) => a.id === 'explorer')!.progress).toEqual({ current: 15, target: 20 })
+  })
 })

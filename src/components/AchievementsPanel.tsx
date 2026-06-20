@@ -57,6 +57,19 @@ export function AchievementsPanel({ achievements, onClose }: AchievementsPanelPr
                   {a.title}
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-500">{a.description}</p>
+                {!a.unlocked && a.progress && (
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <div className="h-1.5 w-32 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                      <div
+                        className="h-full rounded-full bg-violet-500"
+                        style={{ width: `${Math.min(100, (a.progress.current / a.progress.target) * 100)}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] text-slate-400">
+                      {a.progress.current}/{a.progress.target}
+                    </span>
+                  </div>
+                )}
               </div>
             </li>
           ))}

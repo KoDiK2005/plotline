@@ -5,8 +5,8 @@ import { AchievementsPanel } from './AchievementsPanel'
 import type { AchievementStatus } from '../engine/achievements'
 
 const achievements: AchievementStatus[] = [
-  { id: 'a', title: 'Unlocked One', description: 'desc one', unlocked: true },
-  { id: 'b', title: 'Locked One', description: 'desc two', unlocked: false },
+  { id: 'a', title: 'Unlocked One', description: 'desc one', unlocked: true, progress: null },
+  { id: 'b', title: 'Locked One', description: 'desc two', unlocked: false, progress: null },
 ]
 
 describe('AchievementsPanel', () => {
@@ -60,6 +60,25 @@ describe('AchievementsPanel', () => {
 
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows a progress bar with current/target text for a locked achievement that has progress', () => {
+    const withProgress: AchievementStatus[] = [
+      { id: 'a', title: 'Unlocked One', description: 'desc one', unlocked: true, progress: null },
+      { id: 'b', title: 'Locked One', description: 'desc two', unlocked: false, progress: { current: 3, target: 10 } },
+    ]
+    render(<AchievementsPanel achievements={withProgress} onClose={() => {}} />)
+
+    expect(screen.getByText('3/10')).toBeInTheDocument()
+  })
+
+  it('does not show a progress bar for an unlocked achievement even if it has progress data', () => {
+    const withProgress: AchievementStatus[] = [
+      { id: 'a', title: 'Unlocked One', description: 'desc one', unlocked: true, progress: { current: 10, target: 10 } },
+    ]
+    render(<AchievementsPanel achievements={withProgress} onClose={() => {}} />)
+
+    expect(screen.queryByText('10/10')).not.toBeInTheDocument()
   })
 
   it('restores focus to the previously focused element on unmount', () => {
