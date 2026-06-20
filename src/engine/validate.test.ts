@@ -64,6 +64,78 @@ describe('validateStory', () => {
     expect(issues.some((i) => i.id === `bad-effect-${choiceId}-0`)).toBe(true)
   })
 
+  it('warns about a condition on a boolean variable using a non-eq comparator or a non-0/1 value', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { text: 'The beginning.' })
+    story = addChoice(story, startId, 'Use a key')
+    const choiceId = story.nodes[startId].choices[0].id
+    const { story: withVar, variableId } = addVariable(story, 'Has Key', 0, 'boolean')
+    story = withVar
+    story = setChoiceCondition(story, startId, choiceId, { variableId, comparator: 'gte', value: 5 })
+
+    const issues = validateStory(story)
+    expect(issues.some((i) => i.id === `bad-boolean-condition-${choiceId}`)).toBe(true)
+  })
+
+  it('does not warn about a boolean condition that correctly uses eq with 0 or 1', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { text: 'The beginning.' })
+    story = addChoice(story, startId, 'Use a key')
+    const choiceId = story.nodes[startId].choices[0].id
+    const { story: withVar, variableId } = addVariable(story, 'Has Key', 0, 'boolean')
+    story = withVar
+    story = setChoiceCondition(story, startId, choiceId, { variableId, comparator: 'eq', value: 1 })
+
+    const issues = validateStory(story)
+    expect(issues.some((i) => i.id === `bad-boolean-condition-${choiceId}`)).toBe(false)
+  })
+
+  it('warns about an effect on a boolean variable using "add" or a non-0/1 value', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { text: 'The beginning.' })
+    story = addChoice(story, startId, 'Take it')
+    const choiceId = story.nodes[startId].choices[0].id
+    const { story: withVar, variableId } = addVariable(story, 'Has Key', 0, 'boolean')
+    story = withVar
+    story = setChoiceEffects(story, startId, choiceId, [{ variableId, op: 'add', value: 1 }])
+
+    const issues = validateStory(story)
+    expect(issues.some((i) => i.id === `bad-boolean-effect-${choiceId}-0`)).toBe(true)
+  })
+
+  it('does not warn about a boolean effect that correctly sets 0 or 1', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { text: 'The beginning.' })
+    story = addChoice(story, startId, 'Take it')
+    const choiceId = story.nodes[startId].choices[0].id
+    const { story: withVar, variableId } = addVariable(story, 'Has Key', 0, 'boolean')
+    story = withVar
+    story = setChoiceEffects(story, startId, choiceId, [{ variableId, op: 'set', value: 1 }])
+
+    const issues = validateStory(story)
+    expect(issues.some((i) => i.id === `bad-boolean-effect-${choiceId}-0`)).toBe(false)
+  })
+
+  it('does not flag a numeric variable for using comparators/values that would be invalid for booleans', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { text: 'The beginning.' })
+    story = addChoice(story, startId, 'Use a key')
+    const choiceId = story.nodes[startId].choices[0].id
+    const { story: withVar, variableId } = addVariable(story, 'Trust', 0)
+    story = withVar
+    story = setChoiceCondition(story, startId, choiceId, { variableId, comparator: 'gte', value: 5 })
+    story = setChoiceEffects(story, startId, choiceId, [{ variableId, op: 'add', value: 3 }])
+
+    const issues = validateStory(story)
+    expect(issues.some((i) => i.id === `bad-boolean-condition-${choiceId}`)).toBe(false)
+    expect(issues.some((i) => i.id === `bad-boolean-effect-${choiceId}-0`)).toBe(false)
+  })
+
   it('warns about a declared variable that is never used in any condition or effect', () => {
     let story = createStory()
     const startId = story.startNodeId!

@@ -53,21 +53,42 @@ export function validateStory(story: Story): ValidationIssue[] {
 
     for (const choice of node.choices) {
       const choiceLabel = `«${choice.text || 'Без текста'}» в сцене «${node.title || 'Без названия'}»`
-      if (choice.condition && !story.variables.some((v) => v.id === choice.condition!.variableId)) {
-        issues.push({
-          id: `bad-condition-${choice.id}`,
-          severity: 'warning',
-          nodeId: node.id,
-          message: `Условие у варианта ${choiceLabel} ссылается на несуществующую переменную.`,
-        })
+      if (choice.condition) {
+        const variable = story.variables.find((v) => v.id === choice.condition!.variableId)
+        if (!variable) {
+          issues.push({
+            id: `bad-condition-${choice.id}`,
+            severity: 'warning',
+            nodeId: node.id,
+            message: `Условие у варианта ${choiceLabel} ссылается на несуществующую переменную.`,
+          })
+        } else if (
+          variable.type === 'boolean' &&
+          (choice.condition.comparator !== 'eq' || (choice.condition.value !== 0 && choice.condition.value !== 1))
+        ) {
+          issues.push({
+            id: `bad-boolean-condition-${choice.id}`,
+            severity: 'warning',
+            nodeId: node.id,
+            message: `Условие у варианта ${choiceLabel} использует переменную «${variable.name}» (Да/Нет) с недопустимым сравнением или значением — она может быть только 0 или 1.`,
+          })
+        }
       }
       choice.effects.forEach((effect, index) => {
-        if (!story.variables.some((v) => v.id === effect.variableId)) {
+        const variable = story.variables.find((v) => v.id === effect.variableId)
+        if (!variable) {
           issues.push({
             id: `bad-effect-${choice.id}-${index}`,
             severity: 'warning',
             nodeId: node.id,
             message: `Эффект у варианта ${choiceLabel} ссылается на несуществующую переменную.`,
+          })
+        } else if (variable.type === 'boolean' && (effect.op !== 'set' || (effect.value !== 0 && effect.value !== 1))) {
+          issues.push({
+            id: `bad-boolean-effect-${choice.id}-${index}`,
+            severity: 'warning',
+            nodeId: node.id,
+            message: `Эффект у варианта ${choiceLabel} использует переменную «${variable.name}» (Да/Нет) с недопустимой операцией или значением — она может быть только 0 или 1.`,
           })
         }
       })
