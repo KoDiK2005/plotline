@@ -236,6 +236,45 @@ describe('LibraryScreen', () => {
     expect(titles).toEqual(['Ключ от чердака', 'Кофейня на перекрёстке', 'Сигнал из глубины'])
   })
 
+  it('"Не начатые" hides stories that have a recorded play count', async () => {
+    const story = Object.values(useLibraryStore.getState().stories).find((s) => s.title === 'Ключ от чердака')!
+    useProgressStore.getState().recordPlayStart(story.id)
+
+    const user = userEvent.setup()
+    render(<LibraryScreen />)
+
+    await user.selectOptions(screen.getByLabelText('Фильтр'), 'Не начатые')
+
+    expect(screen.queryByText('Ключ от чердака')).not.toBeInTheDocument()
+    expect(screen.getByText('Кофейня на перекрёстке')).toBeInTheDocument()
+    expect(screen.getByText('Сигнал из глубины')).toBeInTheDocument()
+  })
+
+  it('"Все концовки найдены" shows only stories where every ending has been discovered', async () => {
+    const story = Object.values(useLibraryStore.getState().stories).find((s) => s.title === 'Ключ от чердака')!
+    useProgressStore.getState().recordPlayStart(story.id)
+    useProgressStore.getState().recordEnding(story.id, story.startNodeId!)
+
+    const user = userEvent.setup()
+    render(<LibraryScreen />)
+
+    await user.selectOptions(screen.getByLabelText('Фильтр'), 'Все концовки найдены')
+
+    expect(screen.queryByText('Кофейня на перекрёстке')).not.toBeInTheDocument()
+    expect(screen.queryByText('Сигнал из глубины')).not.toBeInTheDocument()
+    expect(screen.queryByText('Ключ от чердака')).not.toBeInTheDocument()
+    expect(screen.getByText('Ничего не найдено.')).toBeInTheDocument()
+  })
+
+  it('shows the "Ничего не найдено." message when a filter excludes every story', async () => {
+    const user = userEvent.setup()
+    render(<LibraryScreen />)
+
+    await user.selectOptions(screen.getByLabelText('Фильтр'), 'В процессе')
+
+    expect(screen.getByText('Ничего не найдено.')).toBeInTheDocument()
+  })
+
   it('opens and closes the achievements panel from the header button', async () => {
     const user = userEvent.setup()
     render(<LibraryScreen />)

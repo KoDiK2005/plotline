@@ -7,6 +7,7 @@ import { StoryCard } from '../components/StoryCard'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { computeAchievements } from '../engine/achievements'
 import { buildStandaloneHtml } from '../engine/exportHtml'
+import { FILTER_LABELS, filterStories, type FilterOption } from '../engine/libraryFilter'
 import { SORT_LABELS, sortStories, type SortOption } from '../engine/librarySort'
 import { parseLibraryBackup, parseStoryJson } from '../engine/storySchema'
 import { useLibraryStore } from '../store/useLibraryStore'
@@ -28,6 +29,7 @@ export function LibraryScreen() {
 
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<SortOption>('updated')
+  const [filter, setFilter] = useState<FilterOption>('all')
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [pendingResetProgressId, setPendingResetProgressId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -43,13 +45,11 @@ export function LibraryScreen() {
 
   const storyList = useMemo(() => {
     const q = query.toLowerCase()
-    return sortStories(
-      Object.values(stories).filter(
-        (s) => s.title.toLowerCase().includes(q) || s.description.toLowerCase().includes(q),
-      ),
-      sort,
+    const matching = Object.values(stories).filter(
+      (s) => s.title.toLowerCase().includes(q) || s.description.toLowerCase().includes(q),
     )
-  }, [stories, query, sort])
+    return sortStories(filterStories(matching, progress, filter), sort)
+  }, [stories, query, sort, filter, progress])
 
   async function handleImportFile(file: File) {
     setError(null)
@@ -112,6 +112,18 @@ export function LibraryScreen() {
               </option>
             ))}
           </select>
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value as FilterOption)}
+            aria-label="Фильтр"
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-violet-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+          >
+            {Object.entries(FILTER_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="flex flex-wrap gap-2">
           <input
@@ -157,7 +169,7 @@ export function LibraryScreen() {
 
       {storyList.length === 0 ? (
         <p className="mt-16 text-center text-sm text-slate-500 dark:text-slate-500">
-          {query ? 'Ничего не найдено.' : 'Историй пока нет — создайте первую!'}
+          {query || filter !== 'all' ? 'Ничего не найдено.' : 'Историй пока нет — создайте первую!'}
         </p>
       ) : (
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
