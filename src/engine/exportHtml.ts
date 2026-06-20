@@ -26,8 +26,9 @@ export function buildStandaloneHtml(story: Story): string {
   .scene h2 { margin: 0 0 .5rem; font-size: 1.05rem; }
   .scene p { margin: 0; white-space: pre-line; }
   .choices { display: flex; flex-direction: column; gap: .5rem; }
-  button.choice { text-align: left; padding: .75rem 1rem; border-radius: .75rem; border: 1px solid rgba(100,116,139,.4); background: transparent; color: inherit; font-size: .9rem; cursor: pointer; font-family: inherit; }
+  button.choice { display: flex; align-items: center; gap: .6rem; text-align: left; padding: .75rem 1rem; border-radius: .75rem; border: 1px solid rgba(100,116,139,.4); background: transparent; color: inherit; font-size: .9rem; cursor: pointer; font-family: inherit; }
   button.choice:hover { border-color: #8b5cf6; background: rgba(139,92,246,.08); }
+  .choice .key { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 1.25rem; height: 1.25rem; border-radius: .3rem; border: 1px solid rgba(100,116,139,.4); font-size: .65rem; font-weight: 600; opacity: .6; }
   .ending { text-align: center; }
   .ending .badge { display: inline-block; padding: .35rem 1rem; border-radius: 999px; background: rgba(139,92,246,.12); color: #7c3aed; font-size: .85rem; font-weight: 600; margin-bottom: .75rem; }
   button.restart { padding: .6rem 1.25rem; border-radius: .75rem; border: none; background: #7c3aed; color: white; font-size: .9rem; cursor: pointer; font-family: inherit; }
@@ -80,6 +81,7 @@ export function buildStandaloneHtml(story: Story): string {
   }
 
   var state = startState();
+  var currentChoices = [];
 
   function render() {
     var app = document.getElementById('app');
@@ -101,6 +103,7 @@ export function buildStandaloneHtml(story: Story): string {
     app.appendChild(scene);
 
     var choices = availableChoices(node, state.variables);
+    currentChoices = choices;
 
     if (choices.length === 0) {
       var ending = document.createElement('div');
@@ -121,10 +124,18 @@ export function buildStandaloneHtml(story: Story): string {
 
     var choicesWrap = document.createElement('div');
     choicesWrap.className = 'choices';
-    choices.forEach(function (choice) {
+    choices.forEach(function (choice, index) {
       var btn = document.createElement('button');
       btn.className = 'choice';
-      btn.textContent = choice.text || '...';
+      if (index < 9) {
+        var kbd = document.createElement('kbd');
+        kbd.className = 'key';
+        kbd.textContent = String(index + 1);
+        btn.appendChild(kbd);
+      }
+      var label = document.createElement('span');
+      label.textContent = choice.text || '...';
+      btn.appendChild(label);
       btn.onclick = function () {
         state = { nodeId: choice.targetNodeId, variables: applyEffects(choice, state.variables) };
         render();
@@ -133,6 +144,17 @@ export function buildStandaloneHtml(story: Story): string {
     });
     app.appendChild(choicesWrap);
   }
+
+  document.addEventListener('keydown', function (e) {
+    var target = e.target;
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+    var index = Number(e.key) - 1;
+    if (!Number.isInteger(index) || index < 0 || index >= currentChoices.length) return;
+    e.preventDefault();
+    var choice = currentChoices[index];
+    state = { nodeId: choice.targetNodeId, variables: applyEffects(choice, state.variables) };
+    render();
+  });
 
   render();
 })();

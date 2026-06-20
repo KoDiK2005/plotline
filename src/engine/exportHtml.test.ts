@@ -35,4 +35,12 @@ describe('buildStandaloneHtml', () => {
     expect(html).toContain('meetsCondition')
     expect(html).toContain('applyEffects')
   })
+
+  it('wires up number-key (1-9) choice selection in the embedded player runtime', () => {
+    const story = createStory()
+    const html = buildStandaloneHtml(story)
+    expect(html).toContain("addEventListener('keydown'")
+    expect(html).toContain('currentChoices')
+    expect(html).toContain("className = 'key'")
+  })
 })
