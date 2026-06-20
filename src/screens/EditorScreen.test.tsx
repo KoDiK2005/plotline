@@ -263,6 +263,31 @@ describe('EditorScreen', () => {
     expect(within(dialog).getByText('Конец ветки')).toBeInTheDocument()
   })
 
+  it('selects a preview choice by pressing its number key', async () => {
+    let story = createStory('Edit Me')
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { title: 'Старт', text: 'Текст старта' })
+    const { story: s2, nodeId: endId } = addNode(story)
+    story = s2
+    story = updateNode(story, endId, { title: 'Конец', text: 'Текст конца' })
+    story = addChoice(story, startId, 'Иди дальше')
+    story = linkChoice(story, startId, story.nodes[startId].choices[0].id, endId)
+    setupStory(story)
+
+    const user = userEvent.setup()
+    render(<EditorScreen />)
+
+    useUIStore.getState().selectNode(startId)
+    await screen.findByRole('heading', { name: 'Сцена' })
+    await user.click(screen.getByRole('button', { name: /Превью/ }))
+
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByText('Текст старта')).toBeInTheDocument()
+
+    fireEvent.keyDown(window, { key: '1' })
+    expect(within(dialog).getByText('Текст конца')).toBeInTheDocument()
+  })
+
   it('closes the preview panel via its close button without mutating the story', async () => {
     const story = createStory('Edit Me')
     setupStory(story)
