@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { addChoice, addNode, addVariable, createStory, setChoiceCondition, setChoiceEffects, updateNode } from './storyOps'
+import {
+  addChoice,
+  addNode,
+  addVariable,
+  createStory,
+  linkChoice,
+  setChoiceCondition,
+  setChoiceEffects,
+  updateNode,
+} from './storyOps'
 import { hasBlockingErrors, validateStory } from './validate'
 
 describe('validateStory', () => {
@@ -122,6 +131,34 @@ describe('validateStory', () => {
     const issues = validateStory(story)
     expect(issues.some((i) => i.id === `duplicate-variable-name-${firstId}`)).toBe(true)
     expect(issues.some((i) => i.id === `duplicate-variable-name-${secondId}`)).toBe(true)
+  })
+
+  it('warns when no ending is reachable from the start node (e.g. an infinite self-loop)', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { text: 'You wander in circles.' })
+    story = addChoice(story, startId, 'Keep wandering')
+    const choiceId = story.nodes[startId].choices[0].id
+    story = linkChoice(story, startId, choiceId, startId)
+
+    const issues = validateStory(story)
+    expect(issues.some((i) => i.id === 'no-reachable-ending')).toBe(true)
+  })
+
+  it('does not warn when at least one reachable branch leads to an ending, even if another loops forever', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { text: 'A fork in the road.' })
+    story = addChoice(story, startId, 'Loop back')
+    story = addChoice(story, startId, 'Walk to the ending')
+    const [loopChoiceId, endChoiceId] = story.nodes[startId].choices.map((c) => c.id)
+    story = linkChoice(story, startId, loopChoiceId, startId)
+    const { story: withEnding, nodeId: endingId } = addNode(story)
+    story = withEnding
+    story = linkChoice(story, startId, endChoiceId, endingId)
+
+    const issues = validateStory(story)
+    expect(issues.some((i) => i.id === 'no-reachable-ending')).toBe(false)
   })
 
   it('does not warn about duplicate names when all variable names are unique', () => {

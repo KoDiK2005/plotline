@@ -1,5 +1,5 @@
 import type { Story } from '../types/story'
-import { reachableNodeIds } from './traverse'
+import { getEndingNodeIds, reachableNodeIds } from './traverse'
 
 export type IssueSeverity = 'error' | 'warning'
 
@@ -70,6 +70,18 @@ export function validateStory(story: Story): ValidationIssue[] {
             message: `Эффект у варианта ${choiceLabel} ссылается на несуществующую переменную.`,
           })
         }
+      })
+    }
+  }
+
+  if (story.startNodeId && story.nodes[story.startNodeId]) {
+    const endings = new Set(getEndingNodeIds(story))
+    const hasReachableEnding = [...reachable].some((id) => endings.has(id))
+    if (!hasReachableEnding) {
+      issues.push({
+        id: 'no-reachable-ending',
+        severity: 'warning',
+        message: 'Из стартовой сцены нельзя дойти ни до одной концовки — история никогда не закончится.',
       })
     }
   }
