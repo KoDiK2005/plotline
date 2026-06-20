@@ -74,6 +74,22 @@ export function validateStory(story: Story): ValidationIssue[] {
     }
   }
 
+  const variableNameCounts = new Map<string, number>()
+  for (const variable of story.variables) {
+    const key = variable.name.trim().toLowerCase()
+    variableNameCounts.set(key, (variableNameCounts.get(key) ?? 0) + 1)
+  }
+  for (const variable of story.variables) {
+    const key = variable.name.trim().toLowerCase()
+    if ((variableNameCounts.get(key) ?? 0) > 1) {
+      issues.push({
+        id: `duplicate-variable-name-${variable.id}`,
+        severity: 'warning',
+        message: `Несколько переменных называются «${variable.name}» — их легко спутать в списках условий и эффектов.`,
+      })
+    }
+  }
+
   for (const variable of story.variables) {
     const isReadInCondition = nodes.some((node) =>
       node.choices.some((choice) => choice.condition?.variableId === variable.id),

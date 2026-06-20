@@ -111,4 +111,26 @@ describe('validateStory', () => {
     expect(issues.some((i) => i.id === `static-variable-${variableId}`)).toBe(false)
     expect(issues.some((i) => i.id === `unused-variable-${variableId}`)).toBe(false)
   })
+
+  it('warns about two variables sharing the same name, case-insensitively', () => {
+    let story = createStory()
+    const { story: s1, variableId: firstId } = addVariable(story, 'Key')
+    story = s1
+    const { story: s2, variableId: secondId } = addVariable(story, 'key')
+    story = s2
+
+    const issues = validateStory(story)
+    expect(issues.some((i) => i.id === `duplicate-variable-name-${firstId}`)).toBe(true)
+    expect(issues.some((i) => i.id === `duplicate-variable-name-${secondId}`)).toBe(true)
+  })
+
+  it('does not warn about duplicate names when all variable names are unique', () => {
+    let story = createStory()
+    const { story: s1, variableId } = addVariable(story, 'Key')
+    story = s1
+    story = addVariable(story, 'Trust').story
+
+    const issues = validateStory(story)
+    expect(issues.some((i) => i.id === `duplicate-variable-name-${variableId}`)).toBe(false)
+  })
 })
