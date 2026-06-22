@@ -35,10 +35,16 @@ const emptyProgress: StoryProgress = {
 // so backfill defaults for those. Returns the same reference when nothing is
 // missing, so callers selecting this from the store don't get a new object
 // (and an infinite re-render loop) on every read.
+const mergedCache = new WeakMap<StoryProgress, StoryProgress>()
+
 function withDefaults(stored: StoryProgress | undefined): StoryProgress {
   if (!stored) return emptyProgress
   const isComplete = Object.keys(emptyProgress).every((key) => key in stored)
-  return isComplete ? stored : { ...emptyProgress, ...stored }
+  if (isComplete) return stored
+  if (mergedCache.has(stored)) return mergedCache.get(stored)!
+  const merged = { ...emptyProgress, ...stored }
+  mergedCache.set(stored, merged)
+  return merged
 }
 
 export const useProgressStore = create<ProgressState>()(
