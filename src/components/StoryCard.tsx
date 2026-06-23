@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import type { Story } from '../types/story'
 import { estimateReadingMinutes } from '../engine/readingTime'
 import { getStoryStats } from '../engine/traverse'
@@ -26,8 +27,8 @@ export function StoryCard({
   onDelete,
   onResetProgress,
 }: StoryCardProps) {
-  const stats = getStoryStats(story)
-  const readingMinutes = estimateReadingMinutes(story)
+  const stats = useMemo(() => getStoryStats(story), [story])
+  const readingMinutes = useMemo(() => estimateReadingMinutes(story), [story])
   const progress = useProgressStore((s) => s.getProgress(story.id))
 
   return (

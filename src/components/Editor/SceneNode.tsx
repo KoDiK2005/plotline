@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Handle, Position, type NodeProps } from 'reactflow'
 import type { SceneNodeData } from '../../engine/flowAdapters'
 
@@ -10,7 +11,7 @@ function wordCountLabel(count: number): string {
   return 'слов'
 }
 
-export function SceneNode({ data, selected }: NodeProps<SceneNodeData>) {
+export const SceneNode = memo(function SceneNode({ data, selected }: NodeProps<SceneNodeData>) {
   const borderClass = selected
     ? 'border-violet-500'
     : data.isStart
@@ -84,4 +85,4 @@ export function SceneNode({ data, selected }: NodeProps<SceneNodeData>) {
       )}
     </div>
   )
-}
+})

@@ -1,5 +1,5 @@
 import type { Edge, Node } from 'reactflow'
-import type { Story } from '../types/story'
+import type { Choice, Story, StoryNode } from '../types/story'
 import { getEndingNodeIds, reachableNodeIds } from './traverse'
 import { countWords } from './readingTime'
 
@@ -13,29 +13,52 @@ export interface SceneNodeData {
   choices: { id: string; text: string; linked: boolean; conditional: boolean; hasEffects: boolean }[]
 }
 
+// Keyed by StoryNode reference: storyOps applies updates immutably, so a node
+// untouched by an edit keeps its old object reference and can reuse the flow
+// node we built for it last time. This keeps unaffected scene cards from
+// re-rendering on every keystroke in the editor, which matters once a story
+// has hundreds of nodes.
+const flowNodeCache = new WeakMap<
+  StoryNode,
+  { isStart: boolean; isUnreachable: boolean; isEnding: boolean; flowNode: Node<SceneNodeData> }
+>()
+
 export function storyToFlowNodes(story: Story): Node<SceneNodeData>[] {
   const reachable = reachableNodeIds(story)
   const endings = new Set(getEndingNodeIds(story))
-  return Object.values(story.nodes).map((node) => ({
-    id: node.id,
-    type: 'scene',
-    position: node.position,
-    data: {
-      title: node.title,
-      text: node.text,
-      isStart: node.id === story.startNodeId,
-      isUnreachable: !reachable.has(node.id),
-      isEnding: endings.has(node.id),
-      wordCount: countWords(node.text),
-      choices: node.choices.map((c) => ({
-        id: c.id,
-        text: c.text,
-        linked: c.targetNodeId !== null,
-        conditional: c.condition !== null,
-        hasEffects: c.effects.length > 0,
-      })),
-    },
-  }))
+  return Object.values(story.nodes).map((node) => {
+    const isStart = node.id === story.startNodeId
+    const isUnreachable = !reachable.has(node.id)
+    const isEnding = endings.has(node.id)
+
+    const cached = flowNodeCache.get(node)
+    if (cached && cached.isStart === isStart && cached.isUnreachable === isUnreachable && cached.isEnding === isEnding) {
+      return cached.flowNode
+    }
+
+    const flowNode: Node<SceneNodeData> = {
+      id: node.id,
+      type: 'scene',
+      position: node.position,
+      data: {
+        title: node.title,
+        text: node.text,
+        isStart,
+        isUnreachable,
+        isEnding,
+        wordCount: countWords(node.text),
+        choices: node.choices.map((c) => ({
+          id: c.id,
+          text: c.text,
+          linked: c.targetNodeId !== null,
+          conditional: c.condition !== null,
+          hasEffects: c.effects.length > 0,
+        })),
+      },
+    }
+    flowNodeCache.set(node, { isStart, isUnreachable, isEnding, flowNode })
+    return flowNode
+  })
 }
 
 export type MapNodeStatus = 'current' | 'visited' | 'unvisited'
@@ -66,12 +89,22 @@ export function storyToMapNodes(
   }))
 }
 
+// Keyed by Choice reference: a choice's source node, target and condition are
+// all read off the choice object itself, so an unchanged choice always maps to
+// the same edge and can be reused instead of rebuilt.
+const flowEdgeCache = new WeakMap<Choice, Edge>()
+
 export function storyToFlowEdges(story: Story): Edge[] {
   const edges: Edge[] = []
   for (const node of Object.values(story.nodes)) {
     for (const choice of node.choices) {
       if (choice.targetNodeId && story.nodes[choice.targetNodeId]) {
-        edges.push({
+        const cached = flowEdgeCache.get(choice)
+        if (cached) {
+          edges.push(cached)
+          continue
+        }
+        const edge: Edge = {
           id: choice.id,
           source: node.id,
           sourceHandle: choice.id,
@@ -80,7 +113,9 @@ export function storyToFlowEdges(story: Story): Edge[] {
           label: choice.condition ? `🔒 ${choice.text || '…'}` : choice.text || '…',
           type: 'smoothstep',
           style: choice.condition ? { strokeDasharray: '5 4' } : undefined,
-        })
+        }
+        flowEdgeCache.set(choice, edge)
+        edges.push(edge)
       }
     }
   }
