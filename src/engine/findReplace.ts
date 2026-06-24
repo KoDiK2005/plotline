@@ -60,18 +60,31 @@ export function replaceAll(story: Story, query: string, replacement: string, opt
   const trimmed = query.trim()
   if (!trimmed) return story
 
+  let changed = false
   const nodes: Record<string, StoryNode> = {}
   for (const [id, node] of Object.entries(story.nodes)) {
-    nodes[id] = {
-      ...node,
-      title: replaceInText(node.title, trimmed, replacement, options),
-      text: replaceInText(node.text, trimmed, replacement, options),
-      choices: node.choices.map((choice) => ({
-        ...choice,
-        text: replaceInText(choice.text, trimmed, replacement, options),
-      })),
+    const title = replaceInText(node.title, trimmed, replacement, options)
+    const text = replaceInText(node.text, trimmed, replacement, options)
+    let choicesChanged = false
+    const choices = node.choices.map((choice) => {
+      const choiceText = replaceInText(choice.text, trimmed, replacement, options)
+      if (choiceText === choice.text) return choice
+      choicesChanged = true
+      return { ...choice, text: choiceText }
+    })
+
+    if (title === node.title && text === node.text && !choicesChanged) {
+      nodes[id] = node
+      continue
     }
+    changed = true
+    nodes[id] = { ...node, title, text, choices }
   }
+
+  // Keep unaffected scenes' object references stable so flowAdapters' WeakMap
+  // caches don't invalidate (and re-render) every scene on a replace that
+  // only touches a few of them.
+  if (!changed) return story
 
   return { ...story, nodes, updatedAt: Date.now() }
 }
