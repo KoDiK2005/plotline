@@ -13,6 +13,7 @@ export interface ValidationIssue {
 export function validateStory(story: Story): ValidationIssue[] {
   const issues: ValidationIssue[] = []
   const nodes = Object.values(story.nodes)
+  const variablesById = new Map(story.variables.map((v) => [v.id, v]))
 
   if (nodes.length === 0) {
     issues.push({ id: 'no-nodes', severity: 'error', message: 'В истории нет ни одной сцены.' })
@@ -54,7 +55,7 @@ export function validateStory(story: Story): ValidationIssue[] {
     for (const choice of node.choices) {
       const choiceLabel = `«${choice.text || 'Без текста'}» в сцене «${node.title || 'Без названия'}»`
       if (choice.condition) {
-        const variable = story.variables.find((v) => v.id === choice.condition!.variableId)
+        const variable = variablesById.get(choice.condition.variableId)
         if (!variable) {
           issues.push({
             id: `bad-condition-${choice.id}`,
@@ -75,7 +76,7 @@ export function validateStory(story: Story): ValidationIssue[] {
         }
       }
       choice.effects.forEach((effect, index) => {
-        const variable = story.variables.find((v) => v.id === effect.variableId)
+        const variable = variablesById.get(effect.variableId)
         if (!variable) {
           issues.push({
             id: `bad-effect-${choice.id}-${index}`,
@@ -123,13 +124,18 @@ export function validateStory(story: Story): ValidationIssue[] {
     }
   }
 
+  const readVariableIds = new Set<string>()
+  const writtenVariableIds = new Set<string>()
+  for (const node of nodes) {
+    for (const choice of node.choices) {
+      if (choice.condition) readVariableIds.add(choice.condition.variableId)
+      for (const effect of choice.effects) writtenVariableIds.add(effect.variableId)
+    }
+  }
+
   for (const variable of story.variables) {
-    const isReadInCondition = nodes.some((node) =>
-      node.choices.some((choice) => choice.condition?.variableId === variable.id),
-    )
-    const isWrittenByEffect = nodes.some((node) =>
-      node.choices.some((choice) => choice.effects.some((effect) => effect.variableId === variable.id)),
-    )
+    const isReadInCondition = readVariableIds.has(variable.id)
+    const isWrittenByEffect = writtenVariableIds.has(variable.id)
     if (!isReadInCondition && !isWrittenByEffect) {
       issues.push({
         id: `unused-variable-${variable.id}`,
