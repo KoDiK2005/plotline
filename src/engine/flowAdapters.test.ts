@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { storyToFlowEdges, storyToFlowNodes } from './flowAdapters'
+import { storyToFlowEdges, storyToFlowNodes, storyToMapNodes } from './flowAdapters'
 import { addChoice, addNode, createStory, linkChoice, updateNode } from './storyOps'
 
 describe('storyToFlowNodes', () => {
@@ -104,6 +104,63 @@ describe('storyToFlowNodes', () => {
 
     const after = storyToFlowNodes(story)
     expect(after.find((n) => n.id === orphanId)!.data.isUnreachable).toBe(false)
+  })
+})
+
+describe('storyToMapNodes', () => {
+  it('marks the current node, visited nodes, and unvisited nodes correctly', () => {
+    let story = createStory('Test')
+    const startId = story.startNodeId!
+    const { story: next, nodeId: otherId } = addNode(story)
+    story = next
+
+    const nodes = storyToMapNodes(story, new Set([startId]), otherId)
+    expect(nodes.find((n) => n.id === startId)!.data.status).toBe('visited')
+    expect(nodes.find((n) => n.id === otherId)!.data.status).toBe('current')
+  })
+
+  it('marks a node as unvisited when it is neither current nor in the visited set', () => {
+    let story = createStory('Test')
+    const startId = story.startNodeId!
+    const { story: next, nodeId: otherId } = addNode(story)
+    story = next
+
+    const nodes = storyToMapNodes(story, new Set(), startId)
+    expect(nodes.find((n) => n.id === otherId)!.data.status).toBe('unvisited')
+  })
+
+  it('reuses the same map node object when called again with unchanged status, so unaffected map cards skip re-rendering', () => {
+    let story = createStory('Test')
+    const startId = story.startNodeId!
+    const { story: next, nodeId: otherId } = addNode(story)
+    story = next
+
+    const before = storyToMapNodes(story, new Set([startId, otherId]), otherId)
+    const beforeStart = before.find((n) => n.id === startId)!
+
+    const after = storyToMapNodes(story, new Set([startId, otherId]), otherId)
+    const afterStart = after.find((n) => n.id === startId)!
+    const afterOther = after.find((n) => n.id === otherId)!
+
+    expect(afterStart).toBe(beforeStart)
+    expect(afterOther).toBe(before.find((n) => n.id === otherId)!)
+  })
+
+  it('rebuilds a map node when its status changes from unvisited to current', () => {
+    let story = createStory('Test')
+    const startId = story.startNodeId!
+    const { story: next, nodeId: otherId } = addNode(story)
+    story = next
+
+    const before = storyToMapNodes(story, new Set([startId]), startId)
+    const beforeOther = before.find((n) => n.id === otherId)!
+    expect(beforeOther.data.status).toBe('unvisited')
+
+    const after = storyToMapNodes(story, new Set([startId, otherId]), otherId)
+    const afterOther = after.find((n) => n.id === otherId)!
+
+    expect(afterOther).not.toBe(beforeOther)
+    expect(afterOther.data.status).toBe('current')
   })
 })
 

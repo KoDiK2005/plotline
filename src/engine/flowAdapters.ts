@@ -70,23 +70,46 @@ export interface MapNodeData {
   choiceIds: string[]
 }
 
+// Keyed by StoryNode reference, same rationale as flowNodeCache above: the
+// player advances by calling choose(), which only ever touches PlayState,
+// never the Story, so without this every choice would otherwise rebuild (and
+// re-render) every map node just to update the one or two whose status
+// actually changed.
+const mapNodeCache = new WeakMap<
+  StoryNode,
+  { isStart: boolean; status: MapNodeStatus; mapNode: Node<MapNodeData> }
+>()
+
 export function storyToMapNodes(
   story: Story,
   visitedNodeIds: Set<string>,
   currentNodeId: string | null,
 ): Node<MapNodeData>[] {
-  return Object.values(story.nodes).map((node) => ({
-    id: node.id,
-    type: 'mapScene',
-    position: node.position,
-    draggable: false,
-    data: {
-      title: node.title,
-      isStart: node.id === story.startNodeId,
-      status: node.id === currentNodeId ? 'current' : visitedNodeIds.has(node.id) ? 'visited' : 'unvisited',
-      choiceIds: node.choices.map((c) => c.id),
-    },
-  }))
+  return Object.values(story.nodes).map((node) => {
+    const isStart = node.id === story.startNodeId
+    const status: MapNodeStatus =
+      node.id === currentNodeId ? 'current' : visitedNodeIds.has(node.id) ? 'visited' : 'unvisited'
+
+    const cached = mapNodeCache.get(node)
+    if (cached && cached.isStart === isStart && cached.status === status) {
+      return cached.mapNode
+    }
+
+    const mapNode: Node<MapNodeData> = {
+      id: node.id,
+      type: 'mapScene',
+      position: node.position,
+      draggable: false,
+      data: {
+        title: node.title,
+        isStart,
+        status,
+        choiceIds: node.choices.map((c) => c.id),
+      },
+    }
+    mapNodeCache.set(node, { isStart, status, mapNode })
+    return mapNode
+  })
 }
 
 // Keyed by Choice reference: a choice's source node, target and condition are

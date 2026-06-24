@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Handle, Position, type NodeProps } from 'reactflow'
 import type { MapNodeData, MapNodeStatus } from '../../engine/flowAdapters'
 
@@ -8,7 +9,10 @@ const statusClass: Record<MapNodeStatus, string> = {
     'border-slate-300 bg-slate-100 text-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-600',
 }
 
-export function MapNode({ data }: NodeProps<MapNodeData>) {
+// Memoized, mirroring SceneNode: storyToMapNodes caches map nodes by StoryNode
+// reference, so without this every node would still re-render on each choice
+// even when its data prop reference didn't change.
+export const MapNode = memo(function MapNode({ data }: NodeProps<MapNodeData>) {
   return (
     <div className={`w-48 rounded-lg border-2 px-3 py-2 text-xs font-medium ${statusClass[data.status]}`}>
       <Handle type="target" id="target" position={Position.Left} className="!opacity-0" />
@@ -22,4 +26,4 @@ export function MapNode({ data }: NodeProps<MapNodeData>) {
       ))}
     </div>
   )
-}
+})
