@@ -48,12 +48,27 @@ describe('reachableDepths', () => {
     const depths = reachableDepths(story)
     expect(depths.size).toBe(2)
   })
+
+  it('returns the same Map instance for repeated calls on the same story, and a fresh one after an edit', () => {
+    const { story } = linearStory()
+    const first = reachableDepths(story)
+    const second = reachableDepths(story)
+    expect(second).toBe(first)
+
+    const { story: edited } = addNode(story)
+    expect(reachableDepths(edited)).not.toBe(first)
+  })
 })
 
 describe('getEndingNodeIds', () => {
   it('identifies nodes with no valid outgoing choices as endings', () => {
     const { story, endId } = linearStory()
     expect(getEndingNodeIds(story)).toEqual([endId])
+  })
+
+  it('returns the same array instance for repeated calls on the same story', () => {
+    const { story } = linearStory()
+    expect(getEndingNodeIds(story)).toBe(getEndingNodeIds(story))
   })
 })
 

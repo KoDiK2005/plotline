@@ -8,22 +8,34 @@ function outgoingTargets(story: Story, nodeId: string): string[] {
     .filter((id): id is string => id !== null && id in story.nodes)
 }
 
+// Keyed by Story reference: storyOps always produces a new top-level Story
+// object on every edit, so caching keyed on it is safe and lets repeated BFS
+// passes over the same story version (stats, validation, flow adapters,
+// reading time, library filtering) share one computation instead of each
+// re-walking the graph.
+const reachableDepthsCache = new WeakMap<Story, Map<string, number>>()
+
 /** Breadth-first distance (in scenes) from the start node to every reachable node. */
 export function reachableDepths(story: Story): Map<string, number> {
+  const cached = reachableDepthsCache.get(story)
+  if (cached) return cached
+
   const depths = new Map<string, number>()
-  if (!story.startNodeId || !story.nodes[story.startNodeId]) return depths
-  const queue: string[] = [story.startNodeId]
-  depths.set(story.startNodeId, 0)
-  while (queue.length > 0) {
-    const current = queue.shift()!
-    const depth = depths.get(current)!
-    for (const target of outgoingTargets(story, current)) {
-      if (!depths.has(target)) {
-        depths.set(target, depth + 1)
-        queue.push(target)
+  if (story.startNodeId && story.nodes[story.startNodeId]) {
+    const queue: string[] = [story.startNodeId]
+    depths.set(story.startNodeId, 0)
+    while (queue.length > 0) {
+      const current = queue.shift()!
+      const depth = depths.get(current)!
+      for (const target of outgoingTargets(story, current)) {
+        if (!depths.has(target)) {
+          depths.set(target, depth + 1)
+          queue.push(target)
+        }
       }
     }
   }
+  reachableDepthsCache.set(story, depths)
   return depths
 }
 
@@ -31,10 +43,17 @@ export function reachableNodeIds(story: Story): Set<string> {
   return new Set(reachableDepths(story).keys())
 }
 
+const endingNodeIdsCache = new WeakMap<Story, string[]>()
+
 export function getEndingNodeIds(story: Story): string[] {
-  return Object.values(story.nodes)
+  const cached = endingNodeIdsCache.get(story)
+  if (cached) return cached
+
+  const endings = Object.values(story.nodes)
     .filter((node) => outgoingTargets(story, node.id).length === 0)
     .map((node) => node.id)
+  endingNodeIdsCache.set(story, endings)
+  return endings
 }
 
 export interface StoryStats {
