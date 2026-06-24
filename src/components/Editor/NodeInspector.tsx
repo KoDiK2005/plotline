@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import type { Comparator, Story, VariableType } from '../../types/story'
 import {
   addChoice,
@@ -47,10 +48,13 @@ export function NodeInspector({
   onJumpToNode,
 }: NodeInspectorProps) {
   const node = story.nodes[nodeId]
+  const otherNodes = useMemo(
+    () => Object.values(story.nodes).filter((n) => n.id !== nodeId),
+    [story.nodes, nodeId],
+  )
   if (!node) return null
 
   const isStart = story.startNodeId === nodeId
-  const otherNodes = Object.values(story.nodes).filter((n) => n.id !== nodeId)
 
   function variableType(variableId: string): VariableType {
     return story.variables.find((v) => v.id === variableId)?.type ?? 'number'
