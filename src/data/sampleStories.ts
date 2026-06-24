@@ -22,7 +22,18 @@ function buildStory(
     }
   }
   const now = Date.now()
-  const draft: Story = { id, title, description, startNodeId, nodes, variables, createdAt: now, updatedAt: now }
+  const draft: Story = {
+    id,
+    title,
+    description,
+    author: 'Plotline',
+    writerId: 'writer_plotline',
+    startNodeId,
+    nodes,
+    variables,
+    createdAt: now,
+    updatedAt: now,
+  }
   const positions = autoLayoutPositions(draft)
   for (const nodeId of Object.keys(nodes)) {
     nodes[nodeId] = { ...nodes[nodeId], position: positions[nodeId] ?? { x: 0, y: 0 } }

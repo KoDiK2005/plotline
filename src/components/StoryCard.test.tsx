@@ -2,8 +2,10 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createStory } from '../engine/storyOps'
+import * as ratingsApi from '../api/ratingsApi'
 import { useFavoriteStore } from '../store/useFavoriteStore'
 import { useProgressStore } from '../store/useProgressStore'
+import { useRatingStore } from '../store/useRatingStore'
 import * as fileUtils from '../utils/file'
 import { StoryCard } from './StoryCard'
 
@@ -12,6 +14,7 @@ const initialProgressState = useProgressStore.getState()
 beforeEach(() => {
   useProgressStore.setState(initialProgressState, true)
   useFavoriteStore.setState({ favorites: {} })
+  useRatingStore.setState({ stats: {}, topWriters: [] })
   localStorage.clear()
   vi.restoreAllMocks()
 })
@@ -176,5 +179,38 @@ describe('StoryCard', () => {
 
     await user.click(screen.getByRole('button', { name: 'Убрать из избранного' }))
     expect(useFavoriteStore.getState().isFavorite(story.id)).toBe(false)
+  })
+
+  it('renders a "просмотров" pill reflecting cached view stats', () => {
+    const story = createStory('Test Story')
+    useRatingStore.setState({ stats: { [story.id]: { likes: 0, views: 7, likedByMe: false } }, topWriters: [] })
+    renderCard({ story })
+
+    const viewsPill = screen.getByText('просмотров', { exact: false }).closest('span')!
+    expect(viewsPill).toHaveTextContent('7просмотров')
+  })
+
+  it('likes a story and reports the updated count', async () => {
+    const likeSpy = vi.spyOn(ratingsApi, 'likeStory').mockResolvedValue({ likes: 1, views: 0, likedByMe: true })
+    const user = userEvent.setup()
+    renderCard()
+
+    await user.click(screen.getByRole('button', { name: 'Поставить лайк' }))
+    expect(likeSpy).toHaveBeenCalledOnce()
+    expect(await screen.findByRole('button', { name: 'Убрать лайк' })).toHaveTextContent('♥ 1')
+  })
+
+  it('unlikes a story when already liked', async () => {
+    const story = createStory('Test Story')
+    useRatingStore.setState({ stats: { [story.id]: { likes: 1, views: 0, likedByMe: true } }, topWriters: [] })
+    const unlikeSpy = vi
+      .spyOn(ratingsApi, 'unlikeStory')
+      .mockResolvedValue({ likes: 0, views: 0, likedByMe: false })
+    const user = userEvent.setup()
+    renderCard({ story })
+
+    await user.click(screen.getByRole('button', { name: 'Убрать лайк' }))
+    expect(unlikeSpy).toHaveBeenCalledOnce()
+    expect(await screen.findByRole('button', { name: 'Поставить лайк' })).toHaveTextContent('♡ 0')
   })
 })

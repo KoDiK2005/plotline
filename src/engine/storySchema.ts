@@ -98,6 +98,8 @@ export function parseStoryJson(data: unknown): Story | null {
   ) {
     return null
   }
+  if (s.author !== undefined && typeof s.author !== 'string') return null
+  if (s.writerId !== undefined && typeof s.writerId !== 'string') return null
 
   if (s.variables !== undefined && !(Array.isArray(s.variables) && s.variables.every(isStoryVariable))) {
     return null
@@ -115,6 +117,8 @@ export function parseStoryJson(data: unknown): Story | null {
     id: s.id,
     title: s.title,
     description: s.description,
+    author: (s.author as string | undefined) ?? '',
+    writerId: (s.writerId as string | undefined) ?? '',
     startNodeId: s.startNodeId as string | null,
     nodes,
     variables: (s.variables as StoryVariable[] | undefined) ?? [],

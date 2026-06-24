@@ -6,6 +6,7 @@ import { estimateReadingMinutes } from '../engine/readingTime'
 import { getStoryStats } from '../engine/traverse'
 import { useFavoriteStore } from '../store/useFavoriteStore'
 import { useProgressStore } from '../store/useProgressStore'
+import { useRatingStore } from '../store/useRatingStore'
 import { downloadJson, downloadText, slugifyFilename } from '../utils/file'
 import { Button } from './Button'
 import { StatPill } from './StatPill'
@@ -38,6 +39,8 @@ export const StoryCard = memo(function StoryCard({
   const progress = useProgressStore((s) => s.getProgress(story.id))
   const isFavorite = useFavoriteStore((s) => s.isFavorite(story.id))
   const toggleFavorite = useFavoriteStore((s) => s.toggleFavorite)
+  const ratingStats = useRatingStore((s) => s.getStats(story.id))
+  const toggleLike = useRatingStore((s) => s.toggleLike)
 
   return (
     <div className="flex flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
@@ -61,7 +64,7 @@ export const StoryCard = memo(function StoryCard({
         {story.description || 'Без описания.'}
       </p>
 
-      <div className="mt-3 flex flex-wrap gap-1.5">
+      <div className="mt-3 flex flex-wrap items-center gap-1.5">
         <StatPill label="сцен" value={stats.nodeCount} />
         <StatPill label="концовок" value={stats.endingCount} />
         <StatPill label="мин чтения" value={`~${readingMinutes}`} />
@@ -71,6 +74,22 @@ export const StoryCard = memo(function StoryCard({
         {progress.discoveredEndingIds.length > 0 && (
           <StatPill label={`из ${stats.endingCount} найдено`} value={progress.discoveredEndingIds.length} />
         )}
+        <StatPill label="просмотров" value={ratingStats.views} />
+        <button
+          onClick={() =>
+            toggleLike(story.id, { title: story.title, authorName: story.author, writerId: story.writerId })
+          }
+          aria-pressed={ratingStats.likedByMe}
+          aria-label={ratingStats.likedByMe ? 'Убрать лайк' : 'Поставить лайк'}
+          title={ratingStats.likedByMe ? 'Убрать лайк' : 'Поставить лайк'}
+          className={
+            ratingStats.likedByMe
+              ? 'inline-flex items-center gap-1 rounded-md bg-rose-500/10 px-2 py-0.5 text-xs font-medium text-rose-500'
+              : 'inline-flex items-center gap-1 rounded-md bg-slate-200/70 px-2 py-0.5 text-xs font-medium text-slate-700 hover:text-rose-500 dark:bg-slate-800 dark:text-slate-300'
+          }
+        >
+          {ratingStats.likedByMe ? '♥' : '♡'} {ratingStats.likes}
+        </button>
       </div>
 
       <div className="mt-4 flex gap-2">

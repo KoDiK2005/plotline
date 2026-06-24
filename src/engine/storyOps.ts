@@ -16,13 +16,15 @@ export function createEmptyNode(position: { x: number; y: number }, title = 'Н�
   }
 }
 
-export function createStory(title = 'Новая история', description = ''): Story {
+export function createStory(title = 'Новая история', description = '', author = '', writerId = ''): Story {
   const startNode = createEmptyNode({ x: 0, y: 0 }, 'Начало')
   const now = Date.now()
   return {
     id: generateId('story'),
     title,
     description,
+    author,
+    writerId,
     startNodeId: startNode.id,
     nodes: { [startNode.id]: startNode },
     variables: [],
@@ -31,7 +33,7 @@ export function createStory(title = 'Новая история', description = '
   }
 }
 
-export function updateMeta(story: Story, patch: Partial<Pick<Story, 'title' | 'description'>>): Story {
+export function updateMeta(story: Story, patch: Partial<Pick<Story, 'title' | 'description' | 'author'>>): Story {
   return touch({ ...story, ...patch })
 }
 

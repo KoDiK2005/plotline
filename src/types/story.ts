@@ -44,6 +44,10 @@ export interface Story {
   id: string
   title: string
   description: string
+  /** Display name of the writer, shown publicly on shared ratings. Defaults to '' for stories saved before this field existed. */
+  author: string
+  /** Stable id of the writer who created this story, used to attribute shared likes/views to them. Defaults to '' for stories saved before this field existed. */
+  writerId: string
   startNodeId: string | null
   nodes: Record<string, StoryNode>
   variables: StoryVariable[]

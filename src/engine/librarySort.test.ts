@@ -7,6 +7,8 @@ function makeStory(overrides: Partial<Story>): Story {
     id: 'id',
     title: 'Untitled',
     description: '',
+    author: '',
+    writerId: '',
     startNodeId: null,
     nodes: {},
     variables: [],
@@ -43,5 +45,9 @@ describe('sortStories', () => {
     const copy = [...stories]
     sortStories(stories, 'title')
     expect(stories).toEqual(copy)
+  })
+
+  it('sorts by rating descending for "rating", treating missing entries as zero', () => {
+    expect(sortStories(stories, 'rating', { a: 5, c: 10 }).map((s) => s.id)).toEqual(['c', 'a', 'b'])
   })
 })

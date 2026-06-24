@@ -3,15 +3,20 @@ import { addChoice, addNode, createStory, linkChoice, updateNode } from './story
 
 export type TemplateId = 'blank' | 'mystery' | 'quest'
 
+export interface WriterIdentity {
+  author: string
+  writerId: string
+}
+
 interface Template {
   id: TemplateId
   label: string
   description: string
-  build: (title: string) => Story
+  build: (title: string, identity: WriterIdentity) => Story
 }
 
-function buildMysteryTemplate(title: string): Story {
-  let story = createStory(title)
+function buildMysteryTemplate(title: string, identity: WriterIdentity): Story {
+  let story = createStory(title, '', identity.author, identity.writerId)
   const startId = story.startNodeId!
   story = updateNode(story, startId, {
     title: 'Завязка',
@@ -50,8 +55,8 @@ function buildMysteryTemplate(title: string): Story {
   return story
 }
 
-function buildQuestTemplate(title: string): Story {
-  let story = createStory(title)
+function buildQuestTemplate(title: string, identity: WriterIdentity): Story {
+  let story = createStory(title, '', identity.author, identity.writerId)
   const startId = story.startNodeId!
   story = updateNode(story, startId, {
     title: 'Зов',
@@ -103,7 +108,7 @@ export const TEMPLATES: Template[] = [
     id: 'blank',
     label: 'Пустая история',
     description: 'Один лист — начните с чистого листа.',
-    build: (title) => createStory(title),
+    build: (title, identity) => createStory(title, '', identity.author, identity.writerId),
   },
   {
     id: 'mystery',
@@ -119,7 +124,11 @@ export const TEMPLATES: Template[] = [
   },
 ]
 
-export function buildFromTemplate(templateId: TemplateId, title: string): Story {
+export function buildFromTemplate(
+  templateId: TemplateId,
+  title: string,
+  identity: WriterIdentity = { author: '', writerId: '' },
+): Story {
   const template = TEMPLATES.find((t) => t.id === templateId) ?? TEMPLATES[0]
-  return template.build(title)
+  return template.build(title, identity)
 }
