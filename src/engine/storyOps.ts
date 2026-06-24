@@ -250,10 +250,16 @@ export function countVariableUsages(story: Story, variableId: string): number {
 }
 
 export function applyPositions(story: Story, positions: Record<string, { x: number; y: number }>): Story {
+  let changed = false
   const nodes = { ...story.nodes }
   for (const [id, position] of Object.entries(positions)) {
-    if (nodes[id]) nodes[id] = { ...nodes[id], position }
+    const node = nodes[id]
+    if (!node) continue
+    if (node.position.x === position.x && node.position.y === position.y) continue
+    changed = true
+    nodes[id] = { ...node, position }
   }
+  if (!changed) return story
   return touch({ ...story, nodes })
 }
 

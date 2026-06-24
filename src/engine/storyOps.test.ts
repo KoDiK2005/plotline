@@ -3,6 +3,7 @@ import {
   addChoice,
   addNode,
   addVariable,
+  applyPositions,
   countVariableUsages,
   createStory,
   deleteChoice,
@@ -394,5 +395,32 @@ describe('setChoiceCondition / setChoiceEffects', () => {
 
     story = setChoiceEffects(story, startId, choiceId, [])
     expect(story.nodes[startId].choices[0].effects).toEqual([])
+  })
+})
+
+describe('applyPositions', () => {
+  it('moves only the nodes whose position actually changed, keeping others by reference', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    const { story: withSecond, nodeId: secondId } = addNode(story, { x: 0, y: 0 })
+    story = withSecond
+    const untouchedSecond = story.nodes[secondId]
+
+    const next = applyPositions(story, {
+      [startId]: { x: 200, y: 100 },
+      [secondId]: { x: 0, y: 0 },
+    })
+
+    expect(next.nodes[startId].position).toEqual({ x: 200, y: 100 })
+    expect(next.nodes[secondId]).toBe(untouchedSecond)
+  })
+
+  it('returns the original story when no position actually changes', () => {
+    const story = createStory()
+    const startId = story.startNodeId!
+    const { x, y } = story.nodes[startId].position
+
+    const next = applyPositions(story, { [startId]: { x, y } })
+    expect(next).toBe(story)
   })
 })
