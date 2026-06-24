@@ -43,4 +43,14 @@ describe('buildStandaloneHtml', () => {
     expect(html).toContain('currentChoices')
     expect(html).toContain("className = 'key'")
   })
+
+  it('omits private author notes from the embedded story JSON', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { notes: 'Secret plan only the author should see' })
+
+    const html = buildStandaloneHtml(story)
+    expect(html).not.toContain('Secret plan only the author should see')
+    expect(html).not.toContain('notes')
+  })
 })

@@ -8,7 +8,15 @@ function escapeHtml(text: string): string {
 // The runtime below is a deliberately small re-implementation of engine/play.ts in vanilla JS,
 // since the exported file can't import anything from the app.
 export function buildStandaloneHtml(story: Story): string {
-  const embeddedStory = JSON.stringify(story).replace(/</g, '\\u003c')
+  // Author notes are private; strip them so they aren't readable in the exported file's source.
+  const nodes = Object.fromEntries(
+    Object.entries(story.nodes).map(([id, node]) => {
+      const { notes, ...rest } = node
+      void notes
+      return [id, rest]
+    }),
+  )
+  const embeddedStory = JSON.stringify({ ...story, nodes }).replace(/</g, '\\u003c')
 
   return `<!doctype html>
 <html lang="ru">

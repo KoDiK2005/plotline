@@ -92,6 +92,17 @@ export function NodeInspector({
         />
       </label>
 
+      <label className="flex flex-col gap-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+        Заметки автора <span className="font-normal italic text-slate-400">(видны только вам, не игроку)</span>
+        <textarea
+          value={node.notes}
+          onChange={(e) => onUpdate((s) => updateNode(s, nodeId, { notes: e.target.value }))}
+          rows={3}
+          placeholder="Идеи, планы по сюжету, TODO..."
+          className={`${fieldClass} resize-none border-dashed`}
+        />
+      </label>
+
       <div className="flex gap-2">
         <Button
           variant={isStart ? 'secondary' : 'primary'}

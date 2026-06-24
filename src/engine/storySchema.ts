@@ -57,6 +57,7 @@ function parseStoryNode(value: unknown): StoryNode | null {
   ) {
     return null
   }
+  if (n.notes !== undefined && typeof n.notes !== 'string') return null
 
   const choices = n.choices.map(parseChoice)
   if (choices.some((c) => c === null)) return null
@@ -67,6 +68,7 @@ function parseStoryNode(value: unknown): StoryNode | null {
     text: n.text,
     choices: choices as Choice[],
     position: n.position as { x: number; y: number },
+    notes: (n.notes as string | undefined) ?? '',
   }
 }
 

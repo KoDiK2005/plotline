@@ -26,6 +26,8 @@ export interface StoryNode {
   text: string
   choices: Choice[]
   position: { x: number; y: number }
+  /** Author-only notes, never shown to the player (in-app or in HTML export). */
+  notes: string
 }
 
 export type VariableType = 'number' | 'boolean'

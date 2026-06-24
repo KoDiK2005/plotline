@@ -47,6 +47,16 @@ describe('addNode / updateNode', () => {
     const result = updateNode(story, 'missing', { title: 'x' })
     expect(result).toBe(story)
   })
+
+  it('creates a new node with empty notes and allows editing them', () => {
+    let story = createStory()
+    const { story: withNode, nodeId } = addNode(story, { x: 0, y: 0 })
+    story = withNode
+    expect(story.nodes[nodeId].notes).toBe('')
+
+    story = updateNode(story, nodeId, { notes: 'Remember to foreshadow the ending here.' })
+    expect(story.nodes[nodeId].notes).toBe('Remember to foreshadow the ending here.')
+  })
 })
 
 describe('choices', () => {
@@ -224,7 +234,7 @@ describe('duplicateNode', () => {
   it('clones a node with a "(копия)" title, the same text, and fresh choice ids pointing at the same targets', () => {
     let story = createStory()
     const startId = story.startNodeId!
-    story = updateNode(story, startId, { title: 'Лес', text: 'Тёмный лес.' })
+    story = updateNode(story, startId, { title: 'Лес', text: 'Тёмный лес.', notes: 'Add a wolf later.' })
     const { story: s1, nodeId: otherId } = addNode(story)
     story = s1
     story = addChoice(story, startId, 'Идти вперёд')
@@ -238,6 +248,7 @@ describe('duplicateNode', () => {
     const copy = story.nodes[copyId!]
     expect(copy.title).toBe('Лес (копия)')
     expect(copy.text).toBe('Тёмный лес.')
+    expect(copy.notes).toBe('Add a wolf later.')
     expect(copy.choices).toHaveLength(1)
     expect(copy.choices[0].id).not.toBe(story.nodes[startId].choices[0].id)
     expect(copy.choices[0].targetNodeId).toBe(otherId)

@@ -12,6 +12,7 @@ export function createEmptyNode(position: { x: number; y: number }, title = '–ù–
     text: '',
     choices: [],
     position,
+    notes: '',
   }
 }
 
@@ -43,7 +44,7 @@ export function addNode(story: Story, position = { x: 0, y: 0 }): { story: Story
 export function updateNode(
   story: Story,
   nodeId: string,
-  patch: Partial<Pick<StoryNode, 'title' | 'text'>>,
+  patch: Partial<Pick<StoryNode, 'title' | 'text' | 'notes'>>,
 ): Story {
   const node = story.nodes[nodeId]
   if (!node) return story
@@ -94,6 +95,7 @@ export function duplicateNode(story: Story, nodeId: string): { story: Story; nod
     text: node.text,
     choices: node.choices.map((choice) => ({ ...choice, id: generateId('choice') })),
     position: { x: node.position.x + 40, y: node.position.y + 40 },
+    notes: node.notes,
   }
   const nodes = { ...story.nodes, [newNode.id]: newNode }
   return { story: touch({ ...story, nodes }), nodeId: newNode.id }
