@@ -1,10 +1,13 @@
-import { useEffect } from 'react'
+import { Suspense, lazy, useEffect } from 'react'
 import { KeyboardShortcutsHelp } from './components/KeyboardShortcutsHelp'
-import { EditorScreen } from './screens/EditorScreen'
 import { LibraryScreen } from './screens/LibraryScreen'
-import { PlayerScreen } from './screens/PlayerScreen'
 import { useSettingsStore } from './store/useSettingsStore'
 import { useUIStore } from './store/useUIStore'
+
+// React Flow (used by both screens) is sizeable, so keep it out of the initial
+// bundle for the common case of just browsing the library.
+const EditorScreen = lazy(() => import('./screens/EditorScreen').then((m) => ({ default: m.EditorScreen })))
+const PlayerScreen = lazy(() => import('./screens/PlayerScreen').then((m) => ({ default: m.PlayerScreen })))
 
 function App() {
   const view = useUIStore((s) => s.view)
@@ -30,8 +33,10 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       {view === 'library' && <LibraryScreen />}
-      {view === 'editor' && <EditorScreen />}
-      {view === 'player' && <PlayerScreen />}
+      <Suspense fallback={null}>
+        {view === 'editor' && <EditorScreen />}
+        {view === 'player' && <PlayerScreen />}
+      </Suspense>
       {showShortcuts && <KeyboardShortcutsHelp onClose={closeShortcuts} />}
     </div>
   )
