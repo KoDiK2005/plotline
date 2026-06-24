@@ -133,6 +133,16 @@ describe('StoryCard', () => {
     expect(downloadText.mock.calls[0][2]).toBe('text/html')
   })
 
+  it('downloads a plain-text script when "TXT" is clicked', async () => {
+    const downloadText = vi.spyOn(fileUtils, 'downloadText').mockImplementation(() => {})
+    const user = userEvent.setup()
+    renderCard({ story: createStory('My Story') })
+    await user.click(screen.getByRole('button', { name: 'TXT' }))
+    expect(downloadText).toHaveBeenCalledTimes(1)
+    expect(downloadText.mock.calls[0][0]).toBe('my-story.txt')
+    expect(downloadText.mock.calls[0][2]).toBe('text/plain')
+  })
+
   it('calls onDelete with the story id when "Удалить" is clicked', async () => {
     const user = userEvent.setup()
     const { onDelete, story } = renderCard()
