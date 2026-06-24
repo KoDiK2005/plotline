@@ -1,29 +1,33 @@
-import { useMemo } from 'react'
+import { memo, useMemo } from 'react'
 import type { Story } from '../types/story'
+import { buildStandaloneHtml } from '../engine/exportHtml'
 import { estimateReadingMinutes } from '../engine/readingTime'
 import { getStoryStats } from '../engine/traverse'
 import { useProgressStore } from '../store/useProgressStore'
+import { downloadJson, downloadText, slugifyFilename } from '../utils/file'
 import { Button } from './Button'
 import { StatPill } from './StatPill'
 
 interface StoryCardProps {
   story: Story
-  onPlay: () => void
-  onEdit: () => void
-  onDuplicate: () => void
-  onExport: () => void
-  onExportHtml: () => void
-  onDelete: () => void
-  onResetProgress: () => void
+  onPlay: (storyId: string) => void
+  onEdit: (storyId: string) => void
+  onDuplicate: (storyId: string) => void
+  onDelete: (storyId: string) => void
+  onResetProgress: (storyId: string) => void
 }
 
-export function StoryCard({
+// Memoized because the library can hold many cards: without this, every
+// keystroke in the search box or any unrelated store update would re-render
+// every card, not just the ones whose underlying story actually changed.
+// This only pays off because the callback props above are stable references
+// (Zustand actions / useState setters) rather than per-card closures — see
+// LibraryScreen, which passes them through unwrapped.
+export const StoryCard = memo(function StoryCard({
   story,
   onPlay,
   onEdit,
   onDuplicate,
-  onExport,
-  onExportHtml,
   onDelete,
   onResetProgress,
 }: StoryCardProps) {
@@ -51,24 +55,33 @@ export function StoryCard({
       </div>
 
       <div className="mt-4 flex gap-2">
-        <Button variant="primary" className="flex-1" onClick={onPlay}>
+        <Button variant="primary" className="flex-1" onClick={() => onPlay(story.id)}>
           Играть
         </Button>
-        <Button variant="secondary" className="flex-1" onClick={onEdit}>
+        <Button variant="secondary" className="flex-1" onClick={() => onEdit(story.id)}>
           Редактировать
         </Button>
       </div>
       <div className="mt-2 flex gap-1 text-xs">
-        <Button variant="ghost" className="flex-1 px-2 py-1 text-xs" onClick={onDuplicate}>
+        <Button variant="ghost" className="flex-1 px-2 py-1 text-xs" onClick={() => onDuplicate(story.id)}>
           Дублировать
         </Button>
-        <Button variant="ghost" className="flex-1 px-2 py-1 text-xs" onClick={onExport}>
+        <Button
+          variant="ghost"
+          className="flex-1 px-2 py-1 text-xs"
+          onClick={() => downloadJson(`${slugifyFilename(story.title)}.json`, story)}
+        >
           JSON
         </Button>
-        <Button variant="ghost" className="flex-1 px-2 py-1 text-xs" onClick={onExportHtml} title="Скачать как самостоятельную HTML-страницу">
+        <Button
+          variant="ghost"
+          className="flex-1 px-2 py-1 text-xs"
+          onClick={() => downloadText(`${slugifyFilename(story.title)}.html`, buildStandaloneHtml(story), 'text/html')}
+          title="Скачать как самостоятельную HTML-страницу"
+        >
           HTML
         </Button>
-        <Button variant="ghost" className="flex-1 px-2 py-1 text-xs text-red-500" onClick={onDelete}>
+        <Button variant="ghost" className="flex-1 px-2 py-1 text-xs text-red-500" onClick={() => onDelete(story.id)}>
           Удалить
         </Button>
       </div>
@@ -76,11 +89,11 @@ export function StoryCard({
         <Button
           variant="ghost"
           className="mt-1 px-2 py-1 text-xs text-slate-500 dark:text-slate-500"
-          onClick={onResetProgress}
+          onClick={() => onResetProgress(story.id)}
         >
           Сбросить прогресс
         </Button>
       )}
     </div>
   )
-}
+})

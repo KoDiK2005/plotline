@@ -6,14 +6,13 @@ import { NewStoryDialog } from '../components/NewStoryDialog'
 import { StoryCard } from '../components/StoryCard'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { computeAchievements } from '../engine/achievements'
-import { buildStandaloneHtml } from '../engine/exportHtml'
 import { FILTER_LABELS, filterStories, type FilterOption } from '../engine/libraryFilter'
 import { SORT_LABELS, sortStories, type SortOption } from '../engine/librarySort'
 import { parseLibraryBackup, parseStoryJson } from '../engine/storySchema'
 import { useLibraryStore } from '../store/useLibraryStore'
 import { useProgressStore } from '../store/useProgressStore'
 import { useUIStore } from '../store/useUIStore'
-import { downloadJson, downloadText, readJsonFile, slugifyFilename } from '../utils/file'
+import { downloadJson, readJsonFile } from '../utils/file'
 
 export function LibraryScreen() {
   const stories = useLibraryStore((s) => s.stories)
@@ -177,13 +176,11 @@ export function LibraryScreen() {
             <StoryCard
               key={story.id}
               story={story}
-              onPlay={() => openPlayer(story.id)}
-              onEdit={() => openEditor(story.id)}
-              onDuplicate={() => duplicateStory(story.id)}
-              onExport={() => downloadJson(`${slugifyFilename(story.title)}.json`, story)}
-              onExportHtml={() => downloadText(`${slugifyFilename(story.title)}.html`, buildStandaloneHtml(story), 'text/html')}
-              onDelete={() => setPendingDeleteId(story.id)}
-              onResetProgress={() => setPendingResetProgressId(story.id)}
+              onPlay={openPlayer}
+              onEdit={openEditor}
+              onDuplicate={duplicateStory}
+              onDelete={setPendingDeleteId}
+              onResetProgress={setPendingResetProgressId}
             />
           ))}
         </div>

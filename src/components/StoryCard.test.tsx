@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createStory } from '../engine/storyOps'
 import { useProgressStore } from '../store/useProgressStore'
+import * as fileUtils from '../utils/file'
 import { StoryCard } from './StoryCard'
 
 const initialProgressState = useProgressStore.getState()
@@ -10,6 +11,7 @@ const initialProgressState = useProgressStore.getState()
 beforeEach(() => {
   useProgressStore.setState(initialProgressState, true)
   localStorage.clear()
+  vi.restoreAllMocks()
 })
 
 function renderCard(overrides: Partial<Parameters<typeof StoryCard>[0]> = {}) {
@@ -18,8 +20,6 @@ function renderCard(overrides: Partial<Parameters<typeof StoryCard>[0]> = {}) {
     onPlay: vi.fn(),
     onEdit: vi.fn(),
     onDuplicate: vi.fn(),
-    onExport: vi.fn(),
-    onExportHtml: vi.fn(),
     onDelete: vi.fn(),
     onResetProgress: vi.fn(),
   }
@@ -29,8 +29,6 @@ function renderCard(overrides: Partial<Parameters<typeof StoryCard>[0]> = {}) {
       onPlay={overrides.onPlay ?? handlers.onPlay}
       onEdit={overrides.onEdit ?? handlers.onEdit}
       onDuplicate={overrides.onDuplicate ?? handlers.onDuplicate}
-      onExport={overrides.onExport ?? handlers.onExport}
-      onExportHtml={overrides.onExportHtml ?? handlers.onExportHtml}
       onDelete={overrides.onDelete ?? handlers.onDelete}
       onResetProgress={overrides.onResetProgress ?? handlers.onResetProgress}
     />,
@@ -94,46 +92,50 @@ describe('StoryCard', () => {
     expect(screen.getByText('из 1 найдено').previousSibling).toHaveTextContent('1')
   })
 
-  it('calls onPlay when "Играть" is clicked', async () => {
+  it('calls onPlay with the story id when "Играть" is clicked', async () => {
     const user = userEvent.setup()
-    const { onPlay } = renderCard()
+    const { onPlay, story } = renderCard()
     await user.click(screen.getByRole('button', { name: 'Играть' }))
-    expect(onPlay).toHaveBeenCalledTimes(1)
+    expect(onPlay).toHaveBeenCalledExactlyOnceWith(story.id)
   })
 
-  it('calls onEdit when "Редактировать" is clicked', async () => {
+  it('calls onEdit with the story id when "Редактировать" is clicked', async () => {
     const user = userEvent.setup()
-    const { onEdit } = renderCard()
+    const { onEdit, story } = renderCard()
     await user.click(screen.getByRole('button', { name: 'Редактировать' }))
-    expect(onEdit).toHaveBeenCalledTimes(1)
+    expect(onEdit).toHaveBeenCalledExactlyOnceWith(story.id)
   })
 
-  it('calls onDuplicate when "Дублировать" is clicked', async () => {
+  it('calls onDuplicate with the story id when "Дублировать" is clicked', async () => {
     const user = userEvent.setup()
-    const { onDuplicate } = renderCard()
+    const { onDuplicate, story } = renderCard()
     await user.click(screen.getByRole('button', { name: 'Дублировать' }))
-    expect(onDuplicate).toHaveBeenCalledTimes(1)
+    expect(onDuplicate).toHaveBeenCalledExactlyOnceWith(story.id)
   })
 
-  it('calls onExport when "JSON" is clicked', async () => {
+  it('downloads a JSON file when "JSON" is clicked', async () => {
+    const downloadJson = vi.spyOn(fileUtils, 'downloadJson').mockImplementation(() => {})
     const user = userEvent.setup()
-    const { onExport } = renderCard()
+    const { story } = renderCard({ story: createStory('My Story') })
     await user.click(screen.getByRole('button', { name: 'JSON' }))
-    expect(onExport).toHaveBeenCalledTimes(1)
+    expect(downloadJson).toHaveBeenCalledExactlyOnceWith('my-story.json', story)
   })
 
-  it('calls onExportHtml when "HTML" is clicked', async () => {
+  it('downloads a standalone HTML file when "HTML" is clicked', async () => {
+    const downloadText = vi.spyOn(fileUtils, 'downloadText').mockImplementation(() => {})
     const user = userEvent.setup()
-    const { onExportHtml } = renderCard()
+    renderCard({ story: createStory('My Story') })
     await user.click(screen.getByRole('button', { name: 'HTML' }))
-    expect(onExportHtml).toHaveBeenCalledTimes(1)
+    expect(downloadText).toHaveBeenCalledTimes(1)
+    expect(downloadText.mock.calls[0][0]).toBe('my-story.html')
+    expect(downloadText.mock.calls[0][2]).toBe('text/html')
   })
 
-  it('calls onDelete when "Удалить" is clicked', async () => {
+  it('calls onDelete with the story id when "Удалить" is clicked', async () => {
     const user = userEvent.setup()
-    const { onDelete } = renderCard()
+    const { onDelete, story } = renderCard()
     await user.click(screen.getByRole('button', { name: 'Удалить' }))
-    expect(onDelete).toHaveBeenCalledTimes(1)
+    expect(onDelete).toHaveBeenCalledExactlyOnceWith(story.id)
   })
 
   it('does not render the "Сбросить прогресс" button when the story has never been played', () => {
@@ -141,13 +143,13 @@ describe('StoryCard', () => {
     expect(screen.queryByRole('button', { name: 'Сбросить прогресс' })).not.toBeInTheDocument()
   })
 
-  it('renders the "Сбросить прогресс" button and calls onResetProgress once the story has been played', async () => {
+  it('renders the "Сбросить прогресс" button and calls onResetProgress with the story id once played', async () => {
     const story = createStory('Test Story')
     useProgressStore.getState().recordPlayStart(story.id)
     const user = userEvent.setup()
     const { onResetProgress } = renderCard({ story })
 
     await user.click(screen.getByRole('button', { name: 'Сбросить прогресс' }))
-    expect(onResetProgress).toHaveBeenCalledTimes(1)
+    expect(onResetProgress).toHaveBeenCalledExactlyOnceWith(story.id)
   })
 })
