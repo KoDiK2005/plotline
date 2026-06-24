@@ -63,6 +63,10 @@ export function deleteNode(story: Story, nodeId: string): Story {
   const nodes: Record<string, StoryNode> = {}
   for (const [id, node] of Object.entries(story.nodes)) {
     if (id === nodeId) continue
+    if (!node.choices.some((choice) => choice.targetNodeId === nodeId)) {
+      nodes[id] = node
+      continue
+    }
     nodes[id] = {
       ...node,
       choices: node.choices.map((choice) =>
@@ -134,10 +138,18 @@ export function deleteChoice(story: Story, nodeId: string, choiceId: string): St
 }
 
 export function deleteDanglingChoices(story: Story): Story {
+  let changed = false
   const nodes: Record<string, StoryNode> = {}
   for (const [id, node] of Object.entries(story.nodes)) {
-    nodes[id] = { ...node, choices: node.choices.filter((c) => c.targetNodeId !== null) }
+    const choices = node.choices.filter((c) => c.targetNodeId !== null)
+    if (choices.length === node.choices.length) {
+      nodes[id] = node
+      continue
+    }
+    changed = true
+    nodes[id] = { ...node, choices }
   }
+  if (!changed) return story
   return touch({ ...story, nodes })
 }
 
@@ -205,6 +217,15 @@ export function deleteVariable(story: Story, variableId: string): Story {
   const variables = story.variables.filter((v) => v.id !== variableId)
   const nodes: Record<string, StoryNode> = {}
   for (const [id, node] of Object.entries(story.nodes)) {
+    const usesVariable = node.choices.some(
+      (choice) =>
+        choice.condition?.variableId === variableId ||
+        choice.effects.some((effect) => effect.variableId === variableId),
+    )
+    if (!usesVariable) {
+      nodes[id] = node
+      continue
+    }
     nodes[id] = {
       ...node,
       choices: node.choices.map((choice) => ({

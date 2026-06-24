@@ -111,6 +111,22 @@ describe('deleteDanglingChoices', () => {
     const result = deleteDanglingChoices(story)
     expect(result.nodes[startId].choices).toHaveLength(1)
   })
+
+  it('returns the same story when nothing is dangling, and keeps unaffected node references stable otherwise', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    const { story: withSecond, nodeId: secondId } = addNode(story)
+    story = withSecond
+    story = addChoice(story, startId, 'Linked')
+    const choiceId = story.nodes[startId].choices[0].id
+    story = linkChoice(story, startId, choiceId, secondId)
+    expect(deleteDanglingChoices(story)).toBe(story)
+
+    story = addChoice(story, startId, 'Dangling')
+    const untouched = story.nodes[secondId]
+    const result = deleteDanglingChoices(story)
+    expect(result.nodes[secondId]).toBe(untouched)
+  })
 })
 
 describe('moveChoice', () => {
@@ -185,6 +201,21 @@ describe('deleteNode', () => {
     story = deleteNode(story, startId)
     expect(story.startNodeId).toBeNull()
     expect(Object.keys(story.nodes)).toHaveLength(0)
+  })
+
+  it('keeps the reference of nodes whose choices do not target the deleted node', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    const { story: s1, nodeId: secondId } = addNode(story)
+    story = s1
+    const { story: s2, nodeId: thirdId } = addNode(story)
+    story = s2
+    story = addChoice(story, startId, 'Go to second')
+    story = linkChoice(story, startId, story.nodes[startId].choices[0].id, secondId)
+
+    const untouched = story.nodes[startId]
+    story = deleteNode(story, thirdId)
+    expect(story.nodes[startId]).toBe(untouched)
   })
 })
 
@@ -290,6 +321,22 @@ describe('variables', () => {
     story = deleteVariable(story, variableId)
     expect(story.nodes[startId].choices[0].condition).toBeNull()
     expect(story.nodes[startId].choices[0].effects).toEqual([])
+  })
+
+  it('keeps the reference of nodes whose choices do not reference the deleted variable', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    const { story: withVar, variableId } = addVariable(story, 'Key', 0)
+    story = withVar
+    const { story: withSecond, nodeId: secondId } = addNode(story)
+    story = withSecond
+    story = addChoice(story, startId, 'Use key')
+    const choiceId = story.nodes[startId].choices[0].id
+    story = setChoiceCondition(story, startId, choiceId, { variableId, comparator: 'gte', value: 1 })
+
+    const untouched = story.nodes[secondId]
+    story = deleteVariable(story, variableId)
+    expect(story.nodes[secondId]).toBe(untouched)
   })
 
   it('counts how many conditions and effects reference a variable', () => {
