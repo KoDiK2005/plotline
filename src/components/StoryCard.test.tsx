@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createStory } from '../engine/storyOps'
+import { useFavoriteStore } from '../store/useFavoriteStore'
 import { useProgressStore } from '../store/useProgressStore'
 import * as fileUtils from '../utils/file'
 import { StoryCard } from './StoryCard'
@@ -10,6 +11,7 @@ const initialProgressState = useProgressStore.getState()
 
 beforeEach(() => {
   useProgressStore.setState(initialProgressState, true)
+  useFavoriteStore.setState({ favorites: {} })
   localStorage.clear()
   vi.restoreAllMocks()
 })
@@ -151,5 +153,18 @@ describe('StoryCard', () => {
 
     await user.click(screen.getByRole('button', { name: 'Сбросить прогресс' }))
     expect(onResetProgress).toHaveBeenCalledExactlyOnceWith(story.id)
+  })
+
+  it('toggles a story into and out of favorites', async () => {
+    const user = userEvent.setup()
+    const { story } = renderCard()
+
+    const star = screen.getByRole('button', { name: 'Добавить в избранное' })
+    await user.click(star)
+    expect(useFavoriteStore.getState().isFavorite(story.id)).toBe(true)
+    expect(screen.getByRole('button', { name: 'Убрать из избранного' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Убрать из избранного' }))
+    expect(useFavoriteStore.getState().isFavorite(story.id)).toBe(false)
   })
 })

@@ -9,6 +9,7 @@ import { computeAchievements } from '../engine/achievements'
 import { FILTER_LABELS, filterStories, type FilterOption } from '../engine/libraryFilter'
 import { SORT_LABELS, sortStories, type SortOption } from '../engine/librarySort'
 import { parseLibraryBackup, parseStoryJson } from '../engine/storySchema'
+import { useFavoriteStore } from '../store/useFavoriteStore'
 import { useLibraryStore } from '../store/useLibraryStore'
 import { useProgressStore } from '../store/useProgressStore'
 import { useUIStore } from '../store/useUIStore'
@@ -22,6 +23,7 @@ export function LibraryScreen() {
   const importStory = useLibraryStore((s) => s.importStory)
   const progress = useProgressStore((s) => s.progress)
   const clearProgress = useProgressStore((s) => s.clearProgress)
+  const favorites = useFavoriteStore((s) => s.favorites)
   const openEditor = useUIStore((s) => s.openEditor)
   const openPlayer = useUIStore((s) => s.openPlayer)
   const openShortcuts = useUIStore((s) => s.openShortcuts)
@@ -29,6 +31,7 @@ export function LibraryScreen() {
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<SortOption>('updated')
   const [filter, setFilter] = useState<FilterOption>('all')
+  const [favoritesOnly, setFavoritesOnly] = useState(false)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [pendingResetProgressId, setPendingResetProgressId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -45,10 +48,13 @@ export function LibraryScreen() {
   const storyList = useMemo(() => {
     const q = query.toLowerCase()
     const matching = Object.values(stories).filter(
-      (s) => s.title.toLowerCase().includes(q) || s.description.toLowerCase().includes(q),
+      (s) =>
+        (s.title.toLowerCase().includes(q) || s.description.toLowerCase().includes(q)) &&
+        (!favoritesOnly || favorites[s.id]),
     )
-    return sortStories(filterStories(matching, progress, filter), sort)
-  }, [stories, query, sort, filter, progress])
+    const sorted = sortStories(filterStories(matching, progress, filter), sort)
+    return sorted.sort((a, b) => Number(Boolean(favorites[b.id])) - Number(Boolean(favorites[a.id])))
+  }, [stories, query, sort, filter, progress, favorites, favoritesOnly])
 
   async function handleImportFile(file: File) {
     setError(null)
@@ -123,6 +129,13 @@ export function LibraryScreen() {
               </option>
             ))}
           </select>
+          <Button
+            variant={favoritesOnly ? 'secondary' : 'ghost'}
+            aria-pressed={favoritesOnly}
+            onClick={() => setFavoritesOnly((v) => !v)}
+          >
+            ★ Избранное
+          </Button>
         </div>
         <div className="flex flex-wrap gap-2">
           <input
@@ -168,7 +181,7 @@ export function LibraryScreen() {
 
       {storyList.length === 0 ? (
         <p className="mt-16 text-center text-sm text-slate-500 dark:text-slate-500">
-          {query || filter !== 'all' ? 'Ничего не найдено.' : 'Историй пока нет — создайте первую!'}
+          {query || filter !== 'all' || favoritesOnly ? 'Ничего не найдено.' : 'Историй пока нет — создайте первую!'}
         </p>
       ) : (
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

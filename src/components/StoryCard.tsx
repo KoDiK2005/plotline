@@ -3,6 +3,7 @@ import type { Story } from '../types/story'
 import { buildStandaloneHtml } from '../engine/exportHtml'
 import { estimateReadingMinutes } from '../engine/readingTime'
 import { getStoryStats } from '../engine/traverse'
+import { useFavoriteStore } from '../store/useFavoriteStore'
 import { useProgressStore } from '../store/useProgressStore'
 import { downloadJson, downloadText, slugifyFilename } from '../utils/file'
 import { Button } from './Button'
@@ -34,10 +35,27 @@ export const StoryCard = memo(function StoryCard({
   const stats = useMemo(() => getStoryStats(story), [story])
   const readingMinutes = useMemo(() => estimateReadingMinutes(story), [story])
   const progress = useProgressStore((s) => s.getProgress(story.id))
+  const isFavorite = useFavoriteStore((s) => s.isFavorite(story.id))
+  const toggleFavorite = useFavoriteStore((s) => s.toggleFavorite)
 
   return (
     <div className="flex flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
-      <h3 className="truncate text-base font-semibold text-slate-900 dark:text-slate-100">{story.title}</h3>
+      <header className="flex items-start justify-between gap-2">
+        <h3 className="truncate text-base font-semibold text-slate-900 dark:text-slate-100">{story.title}</h3>
+        <button
+          onClick={() => toggleFavorite(story.id)}
+          aria-label={isFavorite ? 'Убрать из избранного' : 'Добавить в избранное'}
+          aria-pressed={isFavorite}
+          title={isFavorite ? 'Убрать из избранного' : 'Добавить в избранное'}
+          className={
+            isFavorite
+              ? 'shrink-0 text-amber-400'
+              : 'shrink-0 text-slate-300 hover:text-amber-400 dark:text-slate-600'
+          }
+        >
+          {isFavorite ? '★' : '☆'}
+        </button>
+      </header>
       <p className="mt-1 line-clamp-2 min-h-[2.5rem] text-sm text-slate-600 dark:text-slate-400">
         {story.description || 'Без описания.'}
       </p>

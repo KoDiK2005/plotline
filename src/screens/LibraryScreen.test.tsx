@@ -2,6 +2,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createStory } from '../engine/storyOps'
+import { useFavoriteStore } from '../store/useFavoriteStore'
 import { useLibraryStore } from '../store/useLibraryStore'
 import { useProgressStore } from '../store/useProgressStore'
 import { useUIStore } from '../store/useUIStore'
@@ -15,6 +16,7 @@ beforeEach(() => {
   useLibraryStore.setState(initialLibraryState, true)
   useUIStore.setState(initialUIState, true)
   useProgressStore.setState(initialProgressState, true)
+  useFavoriteStore.setState({ favorites: {} })
   localStorage.clear()
   // Ensure the library reflects the known-good sample set regardless of any
   // mutation that may have happened to the captured initial state object.
@@ -273,6 +275,30 @@ describe('LibraryScreen', () => {
     await user.selectOptions(screen.getByLabelText('Фильтр'), 'В процессе')
 
     expect(screen.getByText('Ничего не найдено.')).toBeInTheDocument()
+  })
+
+  it('"★ Избранное" toggle shows only favorited stories', async () => {
+    const story = Object.values(useLibraryStore.getState().stories).find((s) => s.title === 'Ключ от чердака')!
+    useFavoriteStore.getState().toggleFavorite(story.id)
+
+    const user = userEvent.setup()
+    render(<LibraryScreen />)
+
+    await user.click(screen.getByRole('button', { name: '★ Избранное' }))
+
+    expect(screen.getByText('Ключ от чердака')).toBeInTheDocument()
+    expect(screen.queryByText('Кофейня на перекрёстке')).not.toBeInTheDocument()
+    expect(screen.queryByText('Сигнал из глубины')).not.toBeInTheDocument()
+  })
+
+  it('sorts a favorited story to the top regardless of the chosen sort order', async () => {
+    const story = Object.values(useLibraryStore.getState().stories).find((s) => s.title === 'Кофейня на перекрёстке')!
+    useFavoriteStore.getState().toggleFavorite(story.id)
+
+    render(<LibraryScreen />)
+
+    const titles = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)
+    expect(titles[0]).toBe('Кофейня на перекрёстке')
   })
 
   it('opens and closes the achievements panel from the header button', async () => {
