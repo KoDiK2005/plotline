@@ -124,6 +124,7 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
             nodesConnectable={false}
             elementsSelectable={false}
             fitView
+            onlyRenderVisibleElements
             className="bg-slate-100 dark:bg-slate-950"
           >
             <Background />

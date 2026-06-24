@@ -294,6 +294,7 @@ function EditorScreenInner() {
             onNodeClick={(_, node) => selectNode(node.id)}
             onPaneClick={() => selectNode(null)}
             fitView
+            onlyRenderVisibleElements
             className="bg-slate-100 dark:bg-slate-950"
           >
             <Background />
