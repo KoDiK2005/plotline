@@ -52,6 +52,24 @@ export function validateStory(story: Story): ValidationIssue[] {
       })
     }
 
+    const choiceTextCounts = new Map<string, number>()
+    for (const choice of node.choices) {
+      const key = choice.text.trim().toLowerCase()
+      if (!key) continue
+      choiceTextCounts.set(key, (choiceTextCounts.get(key) ?? 0) + 1)
+    }
+    for (const choice of node.choices) {
+      const key = choice.text.trim().toLowerCase()
+      if (key && (choiceTextCounts.get(key) ?? 0) > 1) {
+        issues.push({
+          id: `duplicate-choice-text-${choice.id}`,
+          severity: 'warning',
+          nodeId: node.id,
+          message: `В сцене «${node.title || 'Без названия'}» несколько вариантов называются «${choice.text}» — игрок не сможет их различить.`,
+        })
+      }
+    }
+
     for (const choice of node.choices) {
       const choiceLabel = `«${choice.text || 'Без текста'}» в сцене «${node.title || 'Без названия'}»`
       if (choice.condition) {
@@ -104,6 +122,24 @@ export function validateStory(story: Story): ValidationIssue[] {
         id: 'no-reachable-ending',
         severity: 'warning',
         message: 'Из стартовой сцены нельзя дойти ни до одной концовки — история никогда не закончится.',
+      })
+    }
+  }
+
+  const nodeTitleCounts = new Map<string, number>()
+  for (const node of nodes) {
+    const key = node.title.trim().toLowerCase()
+    if (!key) continue
+    nodeTitleCounts.set(key, (nodeTitleCounts.get(key) ?? 0) + 1)
+  }
+  for (const node of nodes) {
+    const key = node.title.trim().toLowerCase()
+    if (key && (nodeTitleCounts.get(key) ?? 0) > 1) {
+      issues.push({
+        id: `duplicate-node-title-${node.id}`,
+        severity: 'warning',
+        nodeId: node.id,
+        message: `Несколько сцен называются «${node.title}» — их легко спутать в списке связанных сцен.`,
       })
     }
   }
