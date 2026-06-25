@@ -76,6 +76,14 @@ describe('getStats / getBatchStats', () => {
       c: { likes: 0, views: 0, likedByMe: false },
     })
   })
+
+  it('reports likedByMe per story for the given liker in a batch call', () => {
+    likeStory(db, meta({ storyId: 'a' }), 'liker_a')
+    likeStory(db, meta({ storyId: 'b' }), 'liker_b')
+    const result = getBatchStats(db, ['a', 'b'], 'liker_a')
+    expect(result.a.likedByMe).toBe(true)
+    expect(result.b.likedByMe).toBe(false)
+  })
 })
 
 describe('getTopWriters', () => {

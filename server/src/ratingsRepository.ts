@@ -63,8 +63,31 @@ export function getBatchStats(
 ): Record<string, StoryStats> {
   const result: Record<string, StoryStats> = {}
   for (const storyId of storyIds) {
-    result[storyId] = getStats(db, storyId, likerId)
+    result[storyId] = { likes: 0, views: 0, likedByMe: false }
   }
+  if (storyIds.length === 0) return result
+
+  const placeholders = storyIds.map(() => '?').join(',')
+
+  const viewRows = db
+    .prepare(`SELECT story_id AS storyId, views FROM stories WHERE story_id IN (${placeholders})`)
+    .all(...storyIds) as { storyId: string; views: number }[]
+  for (const row of viewRows) result[row.storyId].views = row.views
+
+  const likeRows = db
+    .prepare(
+      `SELECT story_id AS storyId, COUNT(*) AS likes FROM likes WHERE story_id IN (${placeholders}) GROUP BY story_id`,
+    )
+    .all(...storyIds) as { storyId: string; likes: number }[]
+  for (const row of likeRows) result[row.storyId].likes = row.likes
+
+  if (likerId) {
+    const likedRows = db
+      .prepare(`SELECT story_id AS storyId FROM likes WHERE liker_id = ? AND story_id IN (${placeholders})`)
+      .all(likerId, ...storyIds) as { storyId: string }[]
+    for (const row of likedRows) result[row.storyId].likedByMe = true
+  }
+
   return result
 }
 
