@@ -56,6 +56,14 @@ export const SceneNode = memo(function SceneNode({ data, selected }: NodeProps<S
             🏁 Концовка
           </span>
         )}
+        {data.isStuck && (
+          <span
+            title="Из этой сцены невозможно добраться до концовки"
+            className="mb-1 ml-1 inline-block rounded bg-red-500/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-red-600 dark:text-red-400"
+          >
+            ⛔ Тупик
+          </span>
+        )}
         <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
           {data.title || 'Без названия'}
         </p>

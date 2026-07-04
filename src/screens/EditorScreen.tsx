@@ -21,6 +21,7 @@ import { DescriptionPanel } from '../components/Editor/DescriptionPanel'
 import { FindReplacePanel } from '../components/Editor/FindReplacePanel'
 import { IssuesPanel } from '../components/Editor/IssuesPanel'
 import { NodeInspector } from '../components/Editor/NodeInspector'
+import { OutlinePanel } from '../components/Editor/OutlinePanel'
 import { PreviewPanel } from '../components/Editor/PreviewPanel'
 import { SceneJumpPanel } from '../components/Editor/SceneJumpPanel'
 import { SceneNode } from '../components/Editor/SceneNode'
@@ -57,6 +58,7 @@ function EditorScreenInner() {
   const [showVariables, setShowVariables] = useState(false)
   const [showFindReplace, setShowFindReplace] = useState(false)
   const [showJump, setShowJump] = useState(false)
+  const [showOutline, setShowOutline] = useState(false)
   const [confirmDeleteNodeId, setConfirmDeleteNodeId] = useState<string | null>(null)
   const [previewNodeId, setPreviewNodeId] = useState<string | null>(null)
 
@@ -327,6 +329,9 @@ function EditorScreenInner() {
         >
           ★ К старту
         </Button>
+        <Button variant="ghost" onClick={() => setShowOutline((v) => !v)} title="Список всех сцен">
+          ☰ Структура
+        </Button>
         <Button variant="ghost" onClick={() => setShowDescription((v) => !v)}>
           Описание
         </Button>
@@ -353,6 +358,13 @@ function EditorScreenInner() {
       {showFindReplace && <FindReplacePanel story={story} onUpdate={mutate} onJumpToNode={jumpToNode} />}
 
       <div className="flex flex-1 overflow-hidden">
+        {showOutline && (
+          <OutlinePanel
+            story={currentStory}
+            selectedNodeId={selectedNodeId}
+            onJumpToNode={jumpToNode}
+          />
+        )}
         <div className="relative flex-1">
           <ReactFlow
             nodes={nodes}

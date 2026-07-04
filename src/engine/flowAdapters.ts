@@ -1,6 +1,6 @@
 import type { Edge, Node } from 'reactflow'
 import type { Choice, NodeColor, Story, StoryNode } from '../types/story'
-import { getEndingNodeIds, reachableNodeIds } from './traverse'
+import { getEndingNodeIds, nodesWithPathToEnding, reachableNodeIds } from './traverse'
 import { countWords } from './readingTime'
 
 export interface SceneNodeData {
@@ -9,6 +9,7 @@ export interface SceneNodeData {
   isStart: boolean
   isUnreachable: boolean
   isEnding: boolean
+  isStuck: boolean
   wordCount: number
   hasNotes: boolean
   color?: NodeColor
@@ -22,19 +23,27 @@ export interface SceneNodeData {
 // has hundreds of nodes.
 const flowNodeCache = new WeakMap<
   StoryNode,
-  { isStart: boolean; isUnreachable: boolean; isEnding: boolean; flowNode: Node<SceneNodeData> }
+  { isStart: boolean; isUnreachable: boolean; isEnding: boolean; isStuck: boolean; flowNode: Node<SceneNodeData> }
 >()
 
 export function storyToFlowNodes(story: Story): Node<SceneNodeData>[] {
   const reachable = reachableNodeIds(story)
   const endings = new Set(getEndingNodeIds(story))
+  const canFinish = nodesWithPathToEnding(story)
   return Object.values(story.nodes).map((node) => {
     const isStart = node.id === story.startNodeId
     const isUnreachable = !reachable.has(node.id)
     const isEnding = endings.has(node.id)
+    const isStuck = reachable.has(node.id) && !isEnding && !canFinish.has(node.id)
 
     const cached = flowNodeCache.get(node)
-    if (cached && cached.isStart === isStart && cached.isUnreachable === isUnreachable && cached.isEnding === isEnding) {
+    if (
+      cached &&
+      cached.isStart === isStart &&
+      cached.isUnreachable === isUnreachable &&
+      cached.isEnding === isEnding &&
+      cached.isStuck === isStuck
+    ) {
       return cached.flowNode
     }
 
@@ -48,6 +57,7 @@ export function storyToFlowNodes(story: Story): Node<SceneNodeData>[] {
         isStart,
         isUnreachable,
         isEnding,
+        isStuck,
         wordCount: countWords(node.text),
         hasNotes: node.notes.trim().length > 0,
         color: node.color,
@@ -60,7 +70,7 @@ export function storyToFlowNodes(story: Story): Node<SceneNodeData>[] {
         })),
       },
     }
-    flowNodeCache.set(node, { isStart, isUnreachable, isEnding, flowNode })
+    flowNodeCache.set(node, { isStart, isUnreachable, isEnding, isStuck, flowNode })
     return flowNode
   })
 }
