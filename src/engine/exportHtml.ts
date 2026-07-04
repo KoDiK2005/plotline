@@ -40,6 +40,18 @@ export function buildStandaloneHtml(story: Story): string {
   .ending { text-align: center; }
   .ending .badge { display: inline-block; padding: .35rem 1rem; border-radius: 999px; background: rgba(139,92,246,.12); color: #7c3aed; font-size: .85rem; font-weight: 600; margin-bottom: .75rem; }
   button.restart { padding: .6rem 1.25rem; border-radius: .75rem; border: none; background: #7c3aed; color: white; font-size: .9rem; cursor: pointer; font-family: inherit; }
+  #restore { border: 1px solid rgba(100,116,139,.3); border-radius: 1rem; padding: 1.5rem; text-align: center; margin-bottom: 1.5rem; }
+  #restore p { margin: 0 0 1rem; font-size: .95rem; }
+  .restore-btns { display: flex; gap: .75rem; justify-content: center; flex-wrap: wrap; }
+  button.btn-resume { padding: .6rem 1.25rem; border-radius: .75rem; border: none; background: #7c3aed; color: white; font-size: .9rem; cursor: pointer; font-family: inherit; }
+  button.btn-newgame { padding: .6rem 1.25rem; border-radius: .75rem; border: 1px solid rgba(100,116,139,.4); background: transparent; color: inherit; font-size: .9rem; cursor: pointer; font-family: inherit; }
+  button.btn-newgame:hover { border-color: #8b5cf6; }
+  details.vars { margin-top: 1.25rem; font-size: .8rem; color: #64748b; }
+  details.vars summary { cursor: pointer; user-select: none; }
+  details.vars dl { margin: .5rem 0 0; display: flex; flex-direction: column; gap: .2rem; }
+  details.vars .var-row { display: flex; gap: .5rem; }
+  details.vars dt { font-weight: 600; color: #475569; }
+  @media (prefers-color-scheme: dark) { details.vars dt { color: #94a3b8; } details.vars { color: #64748b; } }
   footer { margin-top: 3rem; text-align: center; font-size: .75rem; opacity: .5; }
 </style>
 </head>
@@ -50,6 +62,7 @@ export function buildStandaloneHtml(story: Story): string {
 <script>
 (function () {
   var STORY = ${embeddedStory};
+  var SAVE_KEY = 'plotline-save-' + STORY.id;
 
   function meetsCondition(choice, variables) {
     var c = choice.condition;
@@ -88,6 +101,25 @@ export function buildStandaloneHtml(story: Story): string {
     return { nodeId: STORY.startNodeId, variables: variables };
   }
 
+  function loadSave() {
+    try {
+      var raw = localStorage.getItem(SAVE_KEY);
+      if (!raw) return null;
+      var saved = JSON.parse(raw);
+      if (!saved || !saved.nodeId || !STORY.nodes[saved.nodeId]) return null;
+      return saved;
+    } catch (e) { return null; }
+  }
+
+  function persistState() {
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify({ nodeId: state.nodeId, variables: state.variables })); }
+    catch (e) {}
+  }
+
+  function clearSave() {
+    try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+  }
+
   var state = startState();
   var currentChoices = [];
 
@@ -114,6 +146,7 @@ export function buildStandaloneHtml(story: Story): string {
     currentChoices = choices;
 
     if (choices.length === 0) {
+      clearSave();
       var ending = document.createElement('div');
       ending.className = 'ending';
       var badge = document.createElement('span');
@@ -122,35 +155,59 @@ export function buildStandaloneHtml(story: Story): string {
       var restart = document.createElement('button');
       restart.className = 'restart';
       restart.textContent = 'Сыграть заново';
-      restart.onclick = function () { state = startState(); render(); };
+      restart.onclick = function () { state = startState(); clearSave(); render(); };
       ending.appendChild(badge);
       ending.appendChild(document.createElement('br'));
       ending.appendChild(restart);
       app.appendChild(ending);
-      return;
+    } else {
+      persistState();
+      var choicesWrap = document.createElement('div');
+      choicesWrap.className = 'choices';
+      choices.forEach(function (choice, index) {
+        var btn = document.createElement('button');
+        btn.className = 'choice';
+        if (index < 9) {
+          var kbd = document.createElement('kbd');
+          kbd.className = 'key';
+          kbd.textContent = String(index + 1);
+          btn.appendChild(kbd);
+        }
+        var label = document.createElement('span');
+        label.textContent = choice.text || '...';
+        btn.appendChild(label);
+        btn.onclick = function () {
+          state = { nodeId: choice.targetNodeId, variables: applyEffects(choice, state.variables) };
+          render();
+        };
+        choicesWrap.appendChild(btn);
+      });
+      app.appendChild(choicesWrap);
     }
 
-    var choicesWrap = document.createElement('div');
-    choicesWrap.className = 'choices';
-    choices.forEach(function (choice, index) {
-      var btn = document.createElement('button');
-      btn.className = 'choice';
-      if (index < 9) {
-        var kbd = document.createElement('kbd');
-        kbd.className = 'key';
-        kbd.textContent = String(index + 1);
-        btn.appendChild(kbd);
-      }
-      var label = document.createElement('span');
-      label.textContent = choice.text || '...';
-      btn.appendChild(label);
-      btn.onclick = function () {
-        state = { nodeId: choice.targetNodeId, variables: applyEffects(choice, state.variables) };
-        render();
-      };
-      choicesWrap.appendChild(btn);
-    });
-    app.appendChild(choicesWrap);
+    if (STORY.variables && STORY.variables.length > 0) {
+      var details = document.createElement('details');
+      details.className = 'vars';
+      var summary = document.createElement('summary');
+      summary.textContent = 'Переменные';
+      details.appendChild(summary);
+      var dl = document.createElement('dl');
+      STORY.variables.forEach(function (v) {
+        var row = document.createElement('div');
+        row.className = 'var-row';
+        var dt = document.createElement('dt');
+        dt.textContent = v.name;
+        var dd = document.createElement('dd');
+        var val = state.variables[v.id];
+        if (val === undefined) val = v.initialValue;
+        dd.textContent = v.type === 'boolean' ? (val === 1 ? 'Да' : 'Нет') : String(val);
+        row.appendChild(dt);
+        row.appendChild(dd);
+        dl.appendChild(row);
+      });
+      details.appendChild(dl);
+      app.appendChild(details);
+    }
   }
 
   document.addEventListener('keydown', function (e) {
@@ -164,7 +221,39 @@ export function buildStandaloneHtml(story: Story): string {
     render();
   });
 
-  render();
+  var saved = loadSave();
+  if (saved) {
+    var restoreDiv = document.createElement('div');
+    restoreDiv.id = 'restore';
+    var restoreMsg = document.createElement('p');
+    restoreMsg.textContent = 'У вас есть сохранённый прогресс. Продолжить?';
+    var btns = document.createElement('div');
+    btns.className = 'restore-btns';
+    var resumeBtn = document.createElement('button');
+    resumeBtn.className = 'btn-resume';
+    resumeBtn.textContent = 'Продолжить';
+    resumeBtn.onclick = function () {
+      state = saved;
+      restoreDiv.remove();
+      render();
+    };
+    var newBtn = document.createElement('button');
+    newBtn.className = 'btn-newgame';
+    newBtn.textContent = 'Начать заново';
+    newBtn.onclick = function () {
+      state = startState();
+      clearSave();
+      restoreDiv.remove();
+      render();
+    };
+    btns.appendChild(resumeBtn);
+    btns.appendChild(newBtn);
+    restoreDiv.appendChild(restoreMsg);
+    restoreDiv.appendChild(btns);
+    document.getElementById('app').appendChild(restoreDiv);
+  } else {
+    render();
+  }
 })();
 </script>
 </body>

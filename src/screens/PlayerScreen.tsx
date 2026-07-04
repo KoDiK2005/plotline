@@ -190,6 +190,26 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
             </div>
           )}
 
+          {story.variables.length > 0 && (
+            <details className="text-xs text-slate-500 dark:text-slate-500">
+              <summary className="cursor-pointer select-none">Переменные</summary>
+              <dl className="mt-2 flex flex-col gap-0.5">
+                {story.variables.map((v) => (
+                  <div key={v.id} className="flex gap-2">
+                    <dt className="font-medium text-slate-700 dark:text-slate-300">{v.name}</dt>
+                    <dd>
+                      {v.type === 'boolean'
+                        ? playState.variables[v.id] === 1
+                          ? 'Да'
+                          : 'Нет'
+                        : (playState.variables[v.id] ?? v.initialValue)}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </details>
+          )}
+
           {playState.history.length > 1 && (
             <details className="text-xs text-slate-500 dark:text-slate-500">
               <summary className="cursor-pointer select-none">
