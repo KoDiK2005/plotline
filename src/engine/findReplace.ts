@@ -1,6 +1,6 @@
 import type { Story, StoryNode } from '../types/story'
 
-export type MatchField = 'title' | 'text' | 'choice'
+export type MatchField = 'title' | 'text' | 'choice' | 'notes'
 
 export interface SearchMatch {
   nodeId: string
@@ -41,6 +41,9 @@ export function findMatches(story: Story, query: string, options: FindOptions = 
     if (regex.test(node.text)) {
       matches.push({ nodeId: node.id, field: 'text', snippet: node.text })
     }
+    if (node.notes && regex.test(node.notes)) {
+      matches.push({ nodeId: node.id, field: 'notes', snippet: node.notes })
+    }
     for (const choice of node.choices) {
       if (regex.test(choice.text)) {
         matches.push({ nodeId: node.id, field: 'choice', choiceId: choice.id, snippet: choice.text })
@@ -65,6 +68,7 @@ export function replaceAll(story: Story, query: string, replacement: string, opt
   for (const [id, node] of Object.entries(story.nodes)) {
     const title = replaceInText(node.title, trimmed, replacement, options)
     const text = replaceInText(node.text, trimmed, replacement, options)
+    const notes = node.notes ? replaceInText(node.notes, trimmed, replacement, options) : node.notes
     let choicesChanged = false
     const choices = node.choices.map((choice) => {
       const choiceText = replaceInText(choice.text, trimmed, replacement, options)
@@ -73,12 +77,12 @@ export function replaceAll(story: Story, query: string, replacement: string, opt
       return { ...choice, text: choiceText }
     })
 
-    if (title === node.title && text === node.text && !choicesChanged) {
+    if (title === node.title && text === node.text && notes === node.notes && !choicesChanged) {
       nodes[id] = node
       continue
     }
     changed = true
-    nodes[id] = { ...node, title, text, choices }
+    nodes[id] = { ...node, title, text, notes: notes ?? '', choices }
   }
 
   // Keep unaffected scenes' object references stable so flowAdapters' WeakMap

@@ -13,6 +13,7 @@ const FIELD_LABELS: Record<MatchField, string> = {
   title: 'Название',
   text: 'Текст',
   choice: 'Вариант',
+  notes: 'Заметки',
 }
 
 const fieldClass =

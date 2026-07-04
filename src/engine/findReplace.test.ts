@@ -138,3 +138,29 @@ describe('replaceAll', () => {
     expect(replaceAll(story, 'жираф', 'медведь')).toBe(story)
   })
 })
+
+describe('notes field support', () => {
+  it('finds a match in node notes', () => {
+    let story = createStory('Test')
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { title: 'Сцена', text: 'Текст', notes: 'TODO: добавить развилку' })
+    const matches = findMatches(story, 'TODO')
+    expect(matches.some((m) => m.nodeId === startId && m.field === 'notes')).toBe(true)
+  })
+
+  it('replaces text in node notes', () => {
+    let story = createStory('Test')
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { title: 'Сцена', text: 'Текст', notes: 'TODO: добавить развилку' })
+    const next = replaceAll(story, 'TODO', 'FIXME')
+    expect(next.nodes[startId].notes).toBe('FIXME: добавить развилку')
+  })
+
+  it('does not include a notes match when the notes field is empty', () => {
+    let story = createStory('Test')
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { title: 'Поиск', text: 'Текст', notes: '' })
+    const matches = findMatches(story, 'Поиск')
+    expect(matches.every((m) => m.field !== 'notes')).toBe(true)
+  })
+})
