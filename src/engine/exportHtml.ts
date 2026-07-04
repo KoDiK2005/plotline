@@ -27,11 +27,15 @@ export function buildStandaloneHtml(story: Story): string {
 <style>
   :root { color-scheme: light dark; }
   body { font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; max-width: 640px; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; line-height: 1.6; background: #f8fafc; color: #0f172a; }
-  @media (prefers-color-scheme: dark) { body { background: #020617; color: #e2e8f0; } }
+  body.dark { background: #020617; color: #e2e8f0; }
+  @media (prefers-color-scheme: dark) { body:not(.light) { background: #020617; color: #e2e8f0; } }
+  #theme-toggle { position: fixed; top: 1rem; right: 1rem; padding: .3rem .6rem; border-radius: .5rem; border: 1px solid rgba(100,116,139,.4); background: transparent; color: inherit; font-size: .8rem; cursor: pointer; font-family: inherit; opacity: .6; }
+  #theme-toggle:hover { opacity: 1; }
   h1 { font-size: 1.25rem; margin: 0 0 .5rem; }
   .description { margin: 0 0 1.5rem; opacity: .7; font-size: .9rem; white-space: pre-line; }
   .scene { border: 1px solid rgba(100,116,139,.3); border-radius: 1rem; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; background: rgba(255,255,255,.6); }
-  @media (prefers-color-scheme: dark) { .scene { background: rgba(15,23,42,.6); } }
+  body.dark .scene { background: rgba(15,23,42,.6); }
+  @media (prefers-color-scheme: dark) { body:not(.light) .scene { background: rgba(15,23,42,.6); } }
   .scene h2 { margin: 0 0 .5rem; font-size: 1.05rem; }
   .scene p { margin: 0; white-space: pre-line; }
   .choices { display: flex; flex-direction: column; gap: .5rem; }
@@ -56,11 +60,13 @@ export function buildStandaloneHtml(story: Story): string {
   details.vars dl { margin: .5rem 0 0; display: flex; flex-direction: column; gap: .2rem; }
   details.vars .var-row { display: flex; gap: .5rem; }
   details.vars dt { font-weight: 600; color: #475569; }
-  @media (prefers-color-scheme: dark) { details.vars dt { color: #94a3b8; } details.vars { color: #64748b; } }
+  @media (prefers-color-scheme: dark) { body:not(.light) details.vars dt { color: #94a3b8; } body:not(.light) details.vars { color: #64748b; } }
+  body.dark details.vars dt { color: #94a3b8; } body.dark details.vars { color: #64748b; }
   footer { margin-top: 3rem; text-align: center; font-size: .75rem; opacity: .5; }
 </style>
 </head>
 <body>
+<button id="theme-toggle" aria-label="Переключить тему" title="Переключить светлую/тёмную тему">🌙</button>
 <h1>${escapeHtml(story.title)}</h1>${story.description.trim() ? `\n<p class="description">${escapeHtml(story.description)}</p>` : ''}
 <div id="app"></div>
 <footer>Сделано в Plotline</footer>
@@ -68,6 +74,34 @@ export function buildStandaloneHtml(story: Story): string {
 (function () {
   var STORY = ${embeddedStory};
   var SAVE_KEY = 'plotline-save-' + STORY.id;
+  var THEME_KEY = 'plotline-theme';
+
+  (function initTheme() {
+    var saved = localStorage.getItem(THEME_KEY);
+    var btn = document.getElementById('theme-toggle');
+    if (saved === 'dark') { document.body.classList.add('dark'); btn.textContent = '🌙'; }
+    else if (saved === 'light') { document.body.classList.add('light'); btn.textContent = '☀️'; }
+    else {
+      var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      btn.textContent = prefersDark ? '🌙' : '☀️';
+    }
+  })();
+
+  document.getElementById('theme-toggle').addEventListener('click', function () {
+    var body = document.body;
+    var btn = document.getElementById('theme-toggle');
+    if (body.classList.contains('dark')) {
+      body.classList.remove('dark');
+      body.classList.add('light');
+      btn.textContent = '☀️';
+      localStorage.setItem(THEME_KEY, 'light');
+    } else {
+      body.classList.remove('light');
+      body.classList.add('dark');
+      btn.textContent = '🌙';
+      localStorage.setItem(THEME_KEY, 'dark');
+    }
+  });
 
   function meetsCondition(choice, variables) {
     var c = choice.condition;
