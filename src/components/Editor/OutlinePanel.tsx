@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { Story } from '../../types/story'
 import { reachableNodeIds, getEndingNodeIds } from '../../engine/traverse'
+import { countWords } from '../../engine/readingTime'
 
 interface OutlinePanelProps {
   story: Story
@@ -51,11 +52,18 @@ export function OutlinePanel({ story, selectedNodeId, onJumpToNode }: OutlinePan
                     : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
                 }`}
               >
-                <span className="flex items-center gap-1">
-                  {isStart && <span title="Стартовая сцена" className="text-emerald-500">★</span>}
-                  {isEnding && <span title="Концовка" className="text-violet-500">🏁</span>}
-                  {isUnreachable && <span title="Недостижима" className="text-amber-500">⚠</span>}
-                  <span className="truncate">{node.title || 'Без названия'}</span>
+                <span className="flex items-center justify-between gap-1">
+                  <span className="flex min-w-0 items-center gap-1">
+                    {isStart && <span title="Стартовая сцена" className="shrink-0 text-emerald-500">★</span>}
+                    {isEnding && <span title="Концовка" className="shrink-0 text-violet-500">🏁</span>}
+                    {isUnreachable && <span title="Недостижима" className="shrink-0 text-amber-500">⚠</span>}
+                    <span className="truncate">{node.title || 'Без названия'}</span>
+                  </span>
+                  {node.text.trim() && (
+                    <span className="shrink-0 text-[10px] text-slate-400 dark:text-slate-600">
+                      {countWords(node.text)}
+                    </span>
+                  )}
                 </span>
               </button>
             </li>

@@ -30,6 +30,7 @@ import type { SceneNodeData } from '../engine/flowAdapters'
 import { storyToFlowEdges, storyToFlowNodes } from '../engine/flowAdapters'
 import { addChoice, addNode, applyPositions, deleteNode, duplicateNode, linkChoice, moveNode, updateMeta } from '../engine/storyOps'
 import { autoLayoutPositions, getStoryStats } from '../engine/traverse'
+import { estimateReadingMinutes } from '../engine/readingTime'
 import { validateStory } from '../engine/validate'
 import { useLibraryStore } from '../store/useLibraryStore'
 import { useUIStore } from '../store/useUIStore'
@@ -227,6 +228,7 @@ function EditorScreenInner() {
 
   const issues = useMemo(() => (story ? validateStory(story) : []), [story])
   const stats = useMemo(() => (story ? getStoryStats(story) : null), [story])
+  const readingMinutes = useMemo(() => (story ? estimateReadingMinutes(story) : 0), [story])
   const errorCount = issues.filter((i) => i.severity === 'error').length
   const warningCount = issues.length - errorCount
 
@@ -288,6 +290,7 @@ function EditorScreenInner() {
           <StatPill label="сцен" value={stats.nodeCount} />
           <StatPill label="концовок" value={stats.endingCount} />
           <StatPill label="сл." value={stats.wordCount} />
+          <StatPill label="мин" value={`~${readingMinutes}`} />
         </div>
         <div className="flex gap-1">
           <Button variant="ghost" disabled={!canUndo} onClick={undo} title="Отменить (Ctrl+Z)" aria-label="Отменить">
@@ -382,7 +385,25 @@ function EditorScreenInner() {
           >
             <Background />
             <Controls showInteractive={false} />
-            <MiniMap pannable zoomable className="dark:!bg-slate-900" />
+            <MiniMap
+              pannable
+              zoomable
+              className="dark:!bg-slate-900"
+              nodeColor={(node) => {
+                const d = (node.data as SceneNodeData | undefined)
+                if (!d) return '#94a3b8'
+                if (d.isUnreachable) return '#f59e0b'
+                if (d.isEnding) return '#7c3aed'
+                if (d.isStart) return '#10b981'
+                if (d.isStuck) return '#ef4444'
+                if (d.color === 'violet') return '#a78bfa'
+                if (d.color === 'blue') return '#60a5fa'
+                if (d.color === 'green') return '#34d399'
+                if (d.color === 'amber') return '#fbbf24'
+                if (d.color === 'red') return '#f87171'
+                return '#94a3b8'
+              }}
+            />
           </ReactFlow>
 
           <Button variant="primary" className="absolute left-4 top-4 shadow-md" onClick={handleAddNode}>
