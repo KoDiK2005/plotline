@@ -37,6 +37,7 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
   const [showMap, setShowMap] = useState(false)
   const [showResumed] = useState(() => (progress.savedPlay?.history.length ?? 0) > 1)
   const [isNewDiscovery, setIsNewDiscovery] = useState(false)
+  const [fontSize, setFontSize] = useState<'sm' | 'md' | 'lg'>('md')
 
   useEffect(() => {
     const prev = document.title
@@ -170,6 +171,14 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
         <Button variant="ghost" onClick={() => setShowMap((v) => !v)}>
           {showMap ? 'Текст' : 'Карта'}
         </Button>
+        <button
+          onClick={() => setFontSize((s) => s === 'sm' ? 'md' : s === 'md' ? 'lg' : 'sm')}
+          title="Размер шрифта"
+          aria-label="Изменить размер шрифта"
+          className="rounded-lg px-2 py-1.5 text-xs text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+        >
+          A{fontSize === 'sm' ? '⁻' : fontSize === 'lg' ? '⁺' : ''}
+        </button>
         {playStateStack.length > 0 && (
           <Button
             variant="ghost"
@@ -248,7 +257,9 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
                 </span>
               )}
             </div>
-            <p className="mt-3 whitespace-pre-line leading-relaxed text-slate-700 dark:text-slate-300">
+            <p className={`mt-3 whitespace-pre-line leading-relaxed text-slate-700 dark:text-slate-300 ${
+              fontSize === 'sm' ? 'text-sm' : fontSize === 'lg' ? 'text-lg' : 'text-base'
+            }`}>
               {node.text}
             </p>
           </div>
