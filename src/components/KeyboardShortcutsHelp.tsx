@@ -21,7 +21,8 @@ const GROUPS: ShortcutGroup[] = [
       { keys: 'Ctrl/⌘ + Z', description: 'Отменить последнее изменение' },
       { keys: 'Ctrl/⌘ + Shift + Z, Ctrl/⌘ + Y', description: 'Повторить отменённое изменение' },
       { keys: 'Ctrl/⌘ + K', description: 'Перейти к сцене по названию' },
-      { keys: 'N', description: 'Создать новую сцену' },
+      { keys: 'N', description: 'Создать новую сцену (связать с выбранной)' },
+      { keys: 'Delete / Backspace', description: 'Удалить выбранную сцену' },
     ],
   },
   {

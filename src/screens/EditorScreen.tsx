@@ -123,6 +123,10 @@ function EditorScreenInner() {
   }, [currentStoryId, future, past, updateStory])
 
   const handleAddNodeRef = useRef<() => void>(() => {})
+  const selectedNodeIdRef = useRef(selectedNodeId)
+  selectedNodeIdRef.current = selectedNodeId
+  const setConfirmDeleteRef = useRef(setConfirmDeleteNodeId)
+  setConfirmDeleteRef.current = setConfirmDeleteNodeId
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -146,9 +150,17 @@ function EditorScreenInner() {
           return
         }
       }
-      if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key.toLowerCase() === 'n') {
-        e.preventDefault()
-        handleAddNodeRef.current()
+      if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (e.key.toLowerCase() === 'n') {
+          e.preventDefault()
+          handleAddNodeRef.current()
+          return
+        }
+        if ((e.key === 'Delete' || e.key === 'Backspace') && selectedNodeIdRef.current) {
+          e.preventDefault()
+          setConfirmDeleteRef.current(selectedNodeIdRef.current)
+          return
+        }
       }
     }
     window.addEventListener('keydown', onKeyDown)
