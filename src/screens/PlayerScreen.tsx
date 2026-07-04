@@ -212,7 +212,17 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
             </p>
           )}
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">{node.title}</h2>
+            <div className="flex items-start justify-between gap-3">
+              <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">{node.title}</h2>
+              {playState.history.length > 1 && (
+                <span
+                  title="Шаг в текущем прохождении"
+                  className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-400 dark:bg-slate-800 dark:text-slate-500"
+                >
+                  {playState.history.length}
+                </span>
+              )}
+            </div>
             <p className="mt-3 whitespace-pre-line leading-relaxed text-slate-700 dark:text-slate-300">
               {node.text}
             </p>
