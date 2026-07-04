@@ -1,5 +1,5 @@
 import cors from 'cors'
-import express, { type Request, type Response } from 'express'
+import express, { type Request, type Response, type NextFunction } from 'express'
 import type Database from 'better-sqlite3'
 import { getBatchStats, getTopWriters, likeStory, recordView, unlikeStory, type StoryMeta } from './ratingsRepository.js'
 
@@ -14,16 +14,45 @@ function parseStoryMeta(storyId: unknown, body: unknown): StoryMeta | null {
   return { storyId, title: b.title, authorName: b.authorName, writerId: b.writerId }
 }
 
+interface RateBucket { count: number; resetAt: number }
+
+function makeRateLimiter(maxRequests: number, windowMs: number) {
+  const buckets = new Map<string, RateBucket>()
+
+  return function rateLimiter(req: Request, res: Response, next: NextFunction) {
+    const ip = (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim()
+      ?? req.socket.remoteAddress
+      ?? 'unknown'
+    const key = `${ip}:${req.method}:${req.path}`
+    const now = Date.now()
+    const bucket = buckets.get(key)
+    if (!bucket || now >= bucket.resetAt) {
+      buckets.set(key, { count: 1, resetAt: now + windowMs })
+      next()
+      return
+    }
+    if (bucket.count >= maxRequests) {
+      res.status(429).json({ error: 'Too many requests, please try again later.' })
+      return
+    }
+    bucket.count++
+    next()
+  }
+}
+
 export function createApp(db: Database.Database) {
   const app = express()
   app.use(cors())
   app.use(express.json())
 
+  const viewLimiter = makeRateLimiter(30, 60_000)
+  const likeLimiter = makeRateLimiter(60, 60_000)
+
   app.get('/health', (_req: Request, res: Response) => {
     res.json({ ok: true })
   })
 
-  app.post('/api/stories/:storyId/view', (req: Request, res: Response) => {
+  app.post('/api/stories/:storyId/view', viewLimiter, (req: Request, res: Response) => {
     const meta = parseStoryMeta(req.params.storyId, req.body)
     if (!meta) {
       res.status(400).json({ error: 'title, authorName and writerId are required' })
@@ -32,7 +61,7 @@ export function createApp(db: Database.Database) {
     res.json(recordView(db, meta))
   })
 
-  app.put('/api/stories/:storyId/like', (req: Request, res: Response) => {
+  app.put('/api/stories/:storyId/like', likeLimiter, (req: Request, res: Response) => {
     const meta = parseStoryMeta(req.params.storyId, req.body)
     const likerId = typeof (req.body as Record<string, unknown>)?.likerId === 'string'
       ? (req.body as Record<string, unknown>).likerId as string
@@ -44,7 +73,7 @@ export function createApp(db: Database.Database) {
     res.json(likeStory(db, meta, likerId))
   })
 
-  app.delete('/api/stories/:storyId/like', (req: Request, res: Response) => {
+  app.delete('/api/stories/:storyId/like', likeLimiter, (req: Request, res: Response) => {
     const storyId = req.params.storyId
     const likerId = typeof (req.body as Record<string, unknown>)?.likerId === 'string'
       ? (req.body as Record<string, unknown>).likerId as string

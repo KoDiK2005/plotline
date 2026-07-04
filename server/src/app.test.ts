@@ -99,3 +99,15 @@ describe('GET /api/writers/top', () => {
     expect(res.body).toEqual([])
   })
 })
+
+describe('rate limiting', () => {
+  it('returns 429 after exceeding the view-endpoint limit from the same IP', async () => {
+    const body = { ...validBody }
+    for (let i = 0; i < 30; i++) {
+      const res = await request(app).post('/api/stories/rate_test/view').send(body)
+      expect(res.status).toBe(200)
+    }
+    const over = await request(app).post('/api/stories/rate_test/view').send(body)
+    expect(over.status).toBe(429)
+  })
+})

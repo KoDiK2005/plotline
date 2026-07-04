@@ -2,6 +2,7 @@ import { memo, useMemo } from 'react'
 import type { Story } from '../types/story'
 import { buildStandaloneHtml } from '../engine/exportHtml'
 import { buildPlainTextScript } from '../engine/exportText'
+import { buildTweeScript } from '../engine/exportTwee'
 import { estimateReadingMinutes } from '../engine/readingTime'
 import { getStoryStats } from '../engine/traverse'
 import { useFavoriteStore } from '../store/useFavoriteStore'
@@ -144,6 +145,14 @@ export const StoryCard = memo(function StoryCard({
           title="Скачать как текстовый сценарий"
         >
           TXT
+        </Button>
+        <Button
+          variant="ghost"
+          className="flex-1 px-2 py-1 text-xs"
+          onClick={() => downloadText(`${slugifyFilename(story.title)}.twee`, buildTweeScript(story), 'text/plain')}
+          title="Скачать как Twee 3 / SugarCube для Twine 2"
+        >
+          Twee
         </Button>
         <Button variant="ghost" className="flex-1 px-2 py-1 text-xs text-red-500" onClick={() => onDelete(story.id)}>
           Удалить
