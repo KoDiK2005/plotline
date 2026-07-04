@@ -39,9 +39,13 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
 
   useEffect(() => {
     const prev = document.title
-    document.title = `${story.title} — Plotline`
+    const currentNode = playState ? story.nodes[playState.currentNodeId] : null
+    const sceneTitle = currentNode?.title?.trim()
+    document.title = sceneTitle
+      ? `${sceneTitle} · ${story.title} — Plotline`
+      : `${story.title} — Plotline`
     return () => { document.title = prev }
-  }, [story.title])
+  }, [story.title, story.nodes, playState?.currentNodeId])
 
   useEffect(() => {
     recordPlayStart(story.id)

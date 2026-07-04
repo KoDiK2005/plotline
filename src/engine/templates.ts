@@ -1,7 +1,7 @@
 import type { Story } from '../types/story'
 import { addChoice, addNode, createStory, linkChoice, updateNode } from './storyOps'
 
-export type TemplateId = 'blank' | 'mystery' | 'quest'
+export type TemplateId = 'blank' | 'mystery' | 'quest' | 'dialogue'
 
 export interface WriterIdentity {
   author: string
@@ -103,6 +103,62 @@ function buildQuestTemplate(title: string, identity: WriterIdentity): Story {
   return story
 }
 
+function buildDialogueTemplate(title: string, identity: WriterIdentity): Story {
+  let story = createStory(title, '', identity.author, identity.writerId)
+  const startId = story.startNodeId!
+  story = updateNode(story, startId, {
+    title: 'Встреча',
+    text: 'Незнакомец останавливается перед вами. «Нам нужно поговорить», — произносит он тихо.',
+  })
+
+  const { story: s1, nodeId: openId } = addNode(story, { x: 300, y: -140 })
+  story = updateNode(s1, openId, {
+    title: 'Открытость',
+    text: '«Слушаю», — отвечаете вы. Незнакомец явно облегчённо вздыхает и начинает говорить.',
+  })
+
+  const { story: s2, nodeId: coldId } = addNode(story, { x: 300, y: 140 })
+  story = updateNode(s2, coldId, {
+    title: 'Отстранённость',
+    text: 'Вы скрещиваете руки. «У меня нет времени». Незнакомец замолкает, что-то взвешивая.',
+  })
+
+  const { story: s3, nodeId: secretId } = addNode(story, { x: 620, y: -200 })
+  story = updateNode(s3, secretId, {
+    title: 'Тайна раскрыта',
+    text: 'Он рассказывает нечто важное. Вы чувствуете, что ваша жизнь больше не будет прежней.',
+  })
+
+  const { story: s4, nodeId: probeId } = addNode(story, { x: 620, y: 0 })
+  story = updateNode(s4, probeId, {
+    title: 'Проверка',
+    text: '«Откуда вы меня знаете?» — не выдерживаете вы. Незнакомец улыбается: «Долгая история».',
+  })
+
+  const { story: s5, nodeId: leaveId } = addNode(story, { x: 620, y: 200 })
+  story = updateNode(s5, leaveId, {
+    title: 'Уход',
+    text: 'Незнакомец кивает и уходит. Вы остаётесь стоять, не понимая, что только что произошло.',
+  })
+
+  story = addChoice(story, startId, 'Выслушать его')
+  story = linkChoice(story, startId, story.nodes[startId].choices[0].id, openId)
+  story = addChoice(story, startId, 'Уйти')
+  story = linkChoice(story, startId, story.nodes[startId].choices[1].id, coldId)
+
+  story = addChoice(story, openId, 'Позволить ему говорить')
+  story = linkChoice(story, openId, story.nodes[openId].choices[0].id, secretId)
+  story = addChoice(story, openId, 'Уточнить, откуда он вас знает')
+  story = linkChoice(story, openId, story.nodes[openId].choices[1].id, probeId)
+
+  story = addChoice(story, coldId, 'Всё же остановиться')
+  story = linkChoice(story, coldId, story.nodes[coldId].choices[0].id, probeId)
+  story = addChoice(story, coldId, 'Уйти')
+  story = linkChoice(story, coldId, story.nodes[coldId].choices[1].id, leaveId)
+
+  return story
+}
+
 export const TEMPLATES: Template[] = [
   {
     id: 'blank',
@@ -121,6 +177,12 @@ export const TEMPLATES: Template[] = [
     label: 'Квест',
     description: '5 сцен: зов, подготовка, испытание и две альтернативные концовки.',
     build: buildQuestTemplate,
+  },
+  {
+    id: 'dialogue',
+    label: 'Диалог',
+    description: '6 сцен: разветвлённый разговор с открытым финалом — хороший старт для коротких историй.',
+    build: buildDialogueTemplate,
   },
 ]
 

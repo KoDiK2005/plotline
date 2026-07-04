@@ -5,7 +5,7 @@ import { getStoryStats } from './traverse'
 
 describe('templates', () => {
   it('exposes blank, mystery, and quest templates', () => {
-    expect(TEMPLATES.map((t) => t.id)).toEqual(['blank', 'mystery', 'quest'])
+    expect(TEMPLATES.map((t) => t.id)).toEqual(['blank', 'mystery', 'quest', 'dialogue'])
   })
 
   it('builds a blank story with a single empty start node', () => {
