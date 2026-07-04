@@ -35,6 +35,7 @@ import { validateStory } from '../engine/validate'
 import { useLibraryStore } from '../store/useLibraryStore'
 import { useUIStore } from '../store/useUIStore'
 import { downloadJson, slugifyFilename } from '../utils/file'
+import { relativeTime } from '../utils/relativeTime'
 import type { Story } from '../types/story'
 
 const nodeTypes = { scene: SceneNode }
@@ -66,6 +67,11 @@ function EditorScreenInner() {
   const [past, setPast] = useState<Story[]>([])
   const [future, setFuture] = useState<Story[]>([])
   const lastMutationAtRef = useRef(0)
+  const [, setTick] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setTick((n) => n + 1), 30_000)
+    return () => clearInterval(id)
+  }, [])
 
   useEffect(() => {
     if (!story) return
@@ -292,6 +298,14 @@ function EditorScreenInner() {
           <StatPill label="сл." value={stats.wordCount} />
           <StatPill label="мин" value={`~${readingMinutes}`} />
         </div>
+        {story.updatedAt > 0 && (
+          <span
+            className="hidden text-xs text-slate-400 dark:text-slate-600 sm:inline"
+            title={`Последнее изменение: ${new Date(story.updatedAt).toLocaleString('ru')}`}
+          >
+            ✓ {relativeTime(story.updatedAt)}
+          </span>
+        )}
         <div className="flex gap-1">
           <Button variant="ghost" disabled={!canUndo} onClick={undo} title="Отменить (Ctrl+Z)" aria-label="Отменить">
             ↶
