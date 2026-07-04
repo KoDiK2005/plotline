@@ -221,6 +221,7 @@ function EditorScreenInner() {
         <div className="hidden gap-1.5 sm:flex">
           <StatPill label="сцен" value={stats.nodeCount} />
           <StatPill label="концовок" value={stats.endingCount} />
+          <StatPill label="сл." value={stats.wordCount} />
         </div>
         <div className="flex gap-1">
           <Button variant="ghost" disabled={!canUndo} onClick={undo} title="Отменить (Ctrl+Z)" aria-label="Отменить">

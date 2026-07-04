@@ -1,4 +1,5 @@
 import type { Story } from '../types/story'
+import { countWords } from './readingTime'
 
 function outgoingTargets(story: Story, nodeId: string): string[] {
   const node = story.nodes[nodeId]
@@ -66,6 +67,7 @@ export interface StoryStats {
   unreachableCount: number
   maxDepth: number
   averageBranching: number
+  wordCount: number
 }
 
 export function getStoryStats(story: Story): StoryStats {
@@ -79,6 +81,11 @@ export function getStoryStats(story: Story): StoryStats {
   const endings = getEndingNodeIds(story)
   const nonEndingCount = nodes.length - endings.length
 
+  const reachable = depths
+  const wordCount = nodes
+    .filter((n) => reachable.has(n.id))
+    .reduce((sum, n) => sum + countWords(n.text), 0)
+
   return {
     nodeCount: nodes.length,
     choiceCount,
@@ -89,6 +96,7 @@ export function getStoryStats(story: Story): StoryStats {
     unreachableCount: Math.max(0, nodes.length - depths.size),
     maxDepth: depths.size > 0 ? Math.max(...depths.values()) : 0,
     averageBranching: nonEndingCount > 0 ? linkedChoiceCount / nonEndingCount : 0,
+    wordCount,
   }
 }
 

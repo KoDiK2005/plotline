@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addChoice, addNode, createStory, linkChoice } from './storyOps'
+import { addChoice, addNode, createStory, linkChoice, updateNode } from './storyOps'
 import { autoLayoutPositions, getEndingNodeIds, getStoryStats, reachableDepths } from './traverse'
 
 function linearStory() {
@@ -95,6 +95,18 @@ describe('getStoryStats', () => {
     const stats = getStoryStats(story)
     expect(stats.danglingChoiceCount).toBe(1)
     expect(stats.unreachableCount).toBe(1)
+  })
+
+  it('counts words only in reachable nodes', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { text: 'один два три' })
+    const { story: withOrphan, nodeId: orphanId } = addNode(story)
+    story = withOrphan
+    story = updateNode(story, orphanId, { text: 'недостижимое слово' })
+
+    const stats = getStoryStats(story)
+    expect(stats.wordCount).toBe(3)
   })
 })
 

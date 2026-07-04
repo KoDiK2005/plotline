@@ -11,6 +11,7 @@ import { useProgressStore } from '../store/useProgressStore'
 import { useRatingStore } from '../store/useRatingStore'
 import { useUIStore } from '../store/useUIStore'
 
+
 const nodeTypes = { mapScene: MapNode }
 
 interface PlayerScreenInnerProps {
@@ -32,6 +33,7 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
   const [playState, setPlayState] = useState<PlayState | null>(() => progress.savedPlay ?? startPlay(story))
   const [showMap, setShowMap] = useState(false)
   const [showResumed] = useState(() => (progress.savedPlay?.history.length ?? 0) > 1)
+  const [isNewDiscovery, setIsNewDiscovery] = useState(false)
 
   useEffect(() => {
     recordPlayStart(story.id)
@@ -42,9 +44,12 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
     if (!playState) return
     recordVisit(story.id, playState.currentNodeId)
     if (isEnding(story, playState)) {
+      const wasNew = !useProgressStore.getState().getProgress(story.id).discoveredEndingIds.includes(playState.currentNodeId)
+      setIsNewDiscovery(wasNew)
       recordEnding(story.id, playState.currentNodeId)
       savePlayState(story.id, null)
     } else {
+      setIsNewDiscovery(false)
       savePlayState(story.id, playState)
     }
   }, [story, playState, recordVisit, recordEnding, savePlayState])
@@ -149,10 +154,15 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
 
           {ending ? (
             <div className="flex flex-col items-center gap-3 text-center">
+              {isNewDiscovery && (
+                <span className="rounded-full bg-amber-500/10 px-4 py-1.5 text-sm font-semibold text-amber-600 dark:text-amber-400">
+                  ✦ Новая концовка!
+                </span>
+              )}
               <span className="rounded-full bg-violet-500/10 px-4 py-1.5 text-sm font-semibold text-violet-600 dark:text-violet-400">
                 Конец истории
               </span>
-              <Button variant="primary" onClick={() => setPlayState(startPlay(story))}>
+              <Button variant="primary" onClick={() => { setIsNewDiscovery(false); setPlayState(startPlay(story)) }}>
                 Сыграть заново
               </Button>
             </div>
