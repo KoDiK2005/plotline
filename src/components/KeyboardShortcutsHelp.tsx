@@ -20,6 +20,7 @@ const GROUPS: ShortcutGroup[] = [
     shortcuts: [
       { keys: 'Ctrl/⌘ + Z', description: 'Отменить последнее изменение' },
       { keys: 'Ctrl/⌘ + Shift + Z, Ctrl/⌘ + Y', description: 'Повторить отменённое изменение' },
+      { keys: 'Ctrl/⌘ + K', description: 'Перейти к сцене по названию' },
     ],
   },
   {

@@ -22,6 +22,7 @@ import { FindReplacePanel } from '../components/Editor/FindReplacePanel'
 import { IssuesPanel } from '../components/Editor/IssuesPanel'
 import { NodeInspector } from '../components/Editor/NodeInspector'
 import { PreviewPanel } from '../components/Editor/PreviewPanel'
+import { SceneJumpPanel } from '../components/Editor/SceneJumpPanel'
 import { SceneNode } from '../components/Editor/SceneNode'
 import { VariablesPanel } from '../components/Editor/VariablesPanel'
 import type { SceneNodeData } from '../engine/flowAdapters'
@@ -55,6 +56,7 @@ function EditorScreenInner() {
   const [showDescription, setShowDescription] = useState(false)
   const [showVariables, setShowVariables] = useState(false)
   const [showFindReplace, setShowFindReplace] = useState(false)
+  const [showJump, setShowJump] = useState(false)
   const [confirmDeleteNodeId, setConfirmDeleteNodeId] = useState<string | null>(null)
   const [previewNodeId, setPreviewNodeId] = useState<string | null>(null)
 
@@ -116,8 +118,13 @@ function EditorScreenInner() {
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       const target = e.target as HTMLElement | null
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return
       if (!(e.ctrlKey || e.metaKey)) return
+      if (e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setShowJump((v) => !v)
+        return
+      }
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return
       if (e.key.toLowerCase() === 'z' && !e.shiftKey) {
         e.preventDefault()
         undo()
@@ -272,6 +279,9 @@ function EditorScreenInner() {
         <Button variant="ghost" onClick={() => setShowFindReplace((v) => !v)}>
           🔍 Найти и заменить
         </Button>
+        <Button variant="ghost" onClick={() => setShowJump(true)} title="Перейти к сцене (Ctrl+K)">
+          ⌕ К сцене
+        </Button>
         <Button variant="ghost" onClick={() => downloadJson(`${slugifyFilename(story.title)}.json`, story)}>
           Экспорт
         </Button>
@@ -340,6 +350,14 @@ function EditorScreenInner() {
 
       {previewNodeId && story.nodes[previewNodeId] && (
         <PreviewPanel story={story} startNodeId={previewNodeId} onClose={() => setPreviewNodeId(null)} />
+      )}
+
+      {showJump && (
+        <SceneJumpPanel
+          story={currentStory}
+          onJump={jumpToNode}
+          onClose={() => setShowJump(false)}
+        />
       )}
     </div>
   )

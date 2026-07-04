@@ -92,6 +92,24 @@ export const StoryCard = memo(function StoryCard({
         </button>
       </div>
 
+      {stats.endingCount > 0 && progress.discoveredEndingIds.length > 0 && (
+        <div
+          className="mt-3 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800"
+          style={{ height: 4 }}
+          title={`Концовок найдено: ${progress.discoveredEndingIds.length} из ${stats.endingCount}`}
+          role="progressbar"
+          aria-valuenow={progress.discoveredEndingIds.length}
+          aria-valuemin={0}
+          aria-valuemax={stats.endingCount}
+          aria-label={`Концовок найдено: ${progress.discoveredEndingIds.length} из ${stats.endingCount}`}
+        >
+          <div
+            className="h-full rounded-full bg-violet-500"
+            style={{ width: `${Math.min(100, (progress.discoveredEndingIds.length / stats.endingCount) * 100)}%` }}
+          />
+        </div>
+      )}
+
       <div className="mt-4 flex gap-2">
         <Button variant="primary" className="flex-1" onClick={() => onPlay(story.id)}>
           Играть
