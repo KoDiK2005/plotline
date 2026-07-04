@@ -10,6 +10,7 @@ import { TopWritersPanel } from '../components/TopWritersPanel'
 import { WriterNameEditor } from '../components/WriterNameEditor'
 import { computeAchievements } from '../engine/achievements'
 import { FILTER_LABELS, filterStories, type FilterOption } from '../engine/libraryFilter'
+import { getStoryStats } from '../engine/traverse'
 import { SORT_LABELS, sortStories, type SortOption } from '../engine/librarySort'
 import { parseLibraryBackup, parseStoryJson } from '../engine/storySchema'
 import { useFavoriteStore } from '../store/useFavoriteStore'
@@ -81,6 +82,18 @@ export function LibraryScreen() {
     return result
   }, [progress])
 
+  const libraryStats = useMemo(() => {
+    const storyList = Object.values(stories)
+    let totalScenes = 0
+    let totalWords = 0
+    for (const s of storyList) {
+      const st = getStoryStats(s)
+      totalScenes += st.nodeCount
+      totalWords += st.wordCount
+    }
+    return { storyCount: storyList.length, totalScenes, totalWords }
+  }, [stories])
+
   const storyList = useMemo(() => {
     const q = query.toLowerCase()
     const matching = Object.values(stories).filter(
@@ -139,6 +152,11 @@ export function LibraryScreen() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Plotline</h1>
           <p className="text-sm text-slate-500 dark:text-slate-500">
             Сочиняйте ветвящиеся истории и проходите их сами.
+            {libraryStats.storyCount > 0 && (
+              <span className="ml-2 text-xs text-slate-400 dark:text-slate-600">
+                {libraryStats.storyCount} {libraryStats.storyCount === 1 ? 'история' : libraryStats.storyCount < 5 ? 'истории' : 'историй'} · {libraryStats.totalScenes} сцен · {libraryStats.totalWords} слов
+              </span>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2">
