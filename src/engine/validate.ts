@@ -41,6 +41,13 @@ export function validateStory(story: Story): ValidationIssue[] {
         nodeId: node.id,
         message: `Сцена «${node.title || 'Без названия'}» не содержит текста.`,
       })
+    } else if (node.text.length > 2000) {
+      issues.push({
+        id: `long-text-${node.id}`,
+        severity: 'warning',
+        nodeId: node.id,
+        message: `Сцена «${node.title || 'Без названия'}» содержит очень длинный текст (${node.text.length} симв.) — возможно, стоит разбить её на несколько сцен.`,
+      })
     }
     const danglingChoices = node.choices.filter((c) => c.targetNodeId === null)
     for (const choice of danglingChoices) {

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { Story } from '../../types/story'
 import { findMatches, replaceAll, type MatchField } from '../../engine/findReplace'
 import { Button } from '../Button'
@@ -24,12 +24,34 @@ export function FindReplacePanel({ story, onUpdate, onJumpToNode }: FindReplaceP
   const [replacement, setReplacement] = useState('')
   const [caseSensitive, setCaseSensitive] = useState(false)
   const [wholeWord, setWholeWord] = useState(false)
+  const [activeIndex, setActiveIndex] = useState(0)
 
   const matches = useMemo(
     () => findMatches(story, query, { caseSensitive, wholeWord }),
     [story, query, caseSensitive, wholeWord],
   )
   const hasQuery = query.trim().length > 0
+
+  useEffect(() => {
+    setActiveIndex(0)
+  }, [query, caseSensitive, wholeWord])
+
+  function jumpTo(index: number) {
+    const match = matches[index]
+    if (match) onJumpToNode(match.nodeId)
+  }
+
+  function stepNext() {
+    const next = (activeIndex + 1) % matches.length
+    setActiveIndex(next)
+    jumpTo(next)
+  }
+
+  function stepPrev() {
+    const prev = (activeIndex - 1 + matches.length) % matches.length
+    setActiveIndex(prev)
+    jumpTo(prev)
+  }
 
   function handleReplaceAll() {
     if (!hasQuery || matches.length === 0) return
@@ -46,6 +68,25 @@ export function FindReplacePanel({ story, onUpdate, onJumpToNode }: FindReplaceP
           aria-label="Найти"
           className={`${fieldClass} w-48`}
         />
+        {hasQuery && matches.length > 0 && (
+          <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+            <button
+              onClick={stepPrev}
+              aria-label="Предыдущее совпадение"
+              className="rounded px-1 py-0.5 hover:bg-slate-200 dark:hover:bg-slate-700"
+            >
+              ‹
+            </button>
+            <span>{activeIndex + 1} / {matches.length}</span>
+            <button
+              onClick={stepNext}
+              aria-label="Следующее совпадение"
+              className="rounded px-1 py-0.5 hover:bg-slate-200 dark:hover:bg-slate-700"
+            >
+              ›
+            </button>
+          </span>
+        )}
         <input
           value={replacement}
           onChange={(e) => setReplacement(e.target.value)}
@@ -87,7 +128,9 @@ export function FindReplacePanel({ story, onUpdate, onJumpToNode }: FindReplaceP
             {matches.map((match, index) => (
               <li
                 key={`${match.nodeId}-${match.field}-${match.choiceId ?? index}`}
-                className="flex items-center justify-between gap-3 text-xs"
+                className={`flex items-center justify-between gap-3 rounded px-1 text-xs ${
+                  index === activeIndex ? 'bg-violet-500/10' : ''
+                }`}
               >
                 <span className="truncate text-slate-600 dark:text-slate-400">
                   <span className="font-medium">{story.nodes[match.nodeId]?.title || 'Без названия'}</span>
@@ -95,7 +138,7 @@ export function FindReplacePanel({ story, onUpdate, onJumpToNode }: FindReplaceP
                   {FIELD_LABELS[match.field]}: «{match.snippet}»
                 </span>
                 <button
-                  onClick={() => onJumpToNode(match.nodeId)}
+                  onClick={() => { setActiveIndex(index); onJumpToNode(match.nodeId) }}
                   className="shrink-0 font-medium text-violet-600 hover:underline dark:text-violet-400"
                 >
                   Перейти

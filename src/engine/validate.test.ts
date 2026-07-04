@@ -304,4 +304,20 @@ describe('validateStory', () => {
     const issues = validateStory(story)
     expect(issues.some((i) => i.id.startsWith('duplicate-node-title-'))).toBe(false)
   })
+
+  it('warns when a scene text exceeds 2000 characters', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { text: 'a'.repeat(2001) })
+    const issues = validateStory(story)
+    expect(issues.some((i) => i.id === `long-text-${startId}`)).toBe(true)
+  })
+
+  it('does not warn for scene text of exactly 2000 characters', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { text: 'a'.repeat(2000) })
+    const issues = validateStory(story)
+    expect(issues.some((i) => i.id.startsWith('long-text-'))).toBe(false)
+  })
 })

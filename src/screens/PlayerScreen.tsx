@@ -10,6 +10,7 @@ import { useLibraryStore } from '../store/useLibraryStore'
 import { useProgressStore } from '../store/useProgressStore'
 import { useRatingStore } from '../store/useRatingStore'
 import { useUIStore } from '../store/useUIStore'
+import { downloadText, slugifyFilename } from '../utils/file'
 
 
 const nodeTypes = { mapScene: MapNode }
@@ -99,6 +100,18 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
 
   const node = story.nodes[playState.currentNodeId]
 
+  function buildTranscript() {
+    const lines: string[] = [`${story.title}\n`]
+    playState!.history.forEach((nodeId, index) => {
+      const n = story.nodes[nodeId]
+      if (!n) return
+      lines.push(`=== ${n.title || 'Сцена ' + (index + 1)} ===`)
+      if (n.text) lines.push(n.text)
+      lines.push('')
+    })
+    return lines.join('\n').trimEnd() + '\n'
+  }
+
   return (
     <div className="flex h-screen flex-col">
       <header className="flex flex-wrap items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
@@ -114,9 +127,18 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
         <Button variant="ghost" onClick={() => setShowMap((v) => !v)}>
           {showMap ? 'Текст' : 'Карта'}
         </Button>
-        <Button variant="ghost" onClick={() => setPlayState(startPlay(story))}>
+        <Button variant="ghost" onClick={() => { setIsNewDiscovery(false); setPlayState(startPlay(story)) }}>
           Начать заново
         </Button>
+        {playState.history.length > 1 && (
+          <Button
+            variant="ghost"
+            onClick={() => downloadText(`${slugifyFilename(story.title)}-transcript.txt`, buildTranscript(), 'text/plain')}
+            title="Скачать транскрипт этого прохождения"
+          >
+            Транскрипт
+          </Button>
+        )}
         <Button variant="secondary" onClick={() => openEditor(story.id)}>
           Редактировать
         </Button>
