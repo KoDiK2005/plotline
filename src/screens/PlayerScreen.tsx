@@ -32,6 +32,7 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
   const recordView = useRatingStore((s) => s.recordView)
 
   const [playState, setPlayState] = useState<PlayState | null>(() => progress.savedPlay ?? startPlay(story))
+  const [playStateStack, setPlayStateStack] = useState<PlayState[]>([])
   const [showMap, setShowMap] = useState(false)
   const [showResumed] = useState(() => (progress.savedPlay?.history.length ?? 0) > 1)
   const [isNewDiscovery, setIsNewDiscovery] = useState(false)
@@ -74,7 +75,11 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
       if (!Number.isInteger(index) || index < 0 || index >= choices.length) return
       e.preventDefault()
       recordChoice(story.id, choices[index].id)
-      setPlayState((state) => (state ? choose(story, state, choices[index].id) : state))
+      setPlayState((state) => {
+        if (!state) return state
+        setPlayStateStack((s) => [...s, state])
+        return choose(story, state, choices[index].id)
+      })
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
@@ -127,7 +132,21 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
         <Button variant="ghost" onClick={() => setShowMap((v) => !v)}>
           {showMap ? 'Текст' : 'Карта'}
         </Button>
-        <Button variant="ghost" onClick={() => { setIsNewDiscovery(false); setPlayState(startPlay(story)) }}>
+        {playStateStack.length > 0 && (
+          <Button
+            variant="ghost"
+            onClick={() => {
+              const prev = playStateStack[playStateStack.length - 1]
+              setPlayStateStack((s) => s.slice(0, -1))
+              setIsNewDiscovery(false)
+              setPlayState(prev)
+            }}
+            title="Вернуться на предыдущий шаг"
+          >
+            ← Назад
+          </Button>
+        )}
+        <Button variant="ghost" onClick={() => { setIsNewDiscovery(false); setPlayState(startPlay(story)); setPlayStateStack([]) }}>
           Начать заново
         </Button>
         {playState.history.length > 1 && (
@@ -184,9 +203,24 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
               <span className="rounded-full bg-violet-500/10 px-4 py-1.5 text-sm font-semibold text-violet-600 dark:text-violet-400">
                 Конец истории
               </span>
-              <Button variant="primary" onClick={() => { setIsNewDiscovery(false); setPlayState(startPlay(story)) }}>
-                Сыграть заново
-              </Button>
+              <div className="flex gap-2">
+                {playStateStack.length > 0 && (
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      const prev = playStateStack[playStateStack.length - 1]
+                      setPlayStateStack((s) => s.slice(0, -1))
+                      setIsNewDiscovery(false)
+                      setPlayState(prev)
+                    }}
+                  >
+                    ← Назад
+                  </Button>
+                )}
+                <Button variant="primary" onClick={() => { setIsNewDiscovery(false); setPlayState(startPlay(story)); setPlayStateStack([]) }}>
+                  Сыграть заново
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="flex flex-col gap-2">
@@ -195,7 +229,11 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
                   key={choice.id}
                   onClick={() => {
                     recordChoice(story.id, choice.id)
-                    setPlayState((state) => (state ? choose(story, state, choice.id) : state))
+                    setPlayState((state) => {
+                      if (!state) return state
+                      setPlayStateStack((s) => [...s, state])
+                      return choose(story, state, choice.id)
+                    })
                   }}
                   className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 text-left text-sm font-medium text-slate-800 transition-colors hover:border-violet-400 hover:bg-violet-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                 >
