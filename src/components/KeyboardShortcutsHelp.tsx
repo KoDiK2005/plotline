@@ -12,7 +12,7 @@ const GROUPS: ShortcutGroup[] = [
     title: 'Везде',
     shortcuts: [
       { keys: '?', description: 'Открыть эту справку' },
-      { keys: 'Esc', description: 'Закрыть диалог или панель' },
+      { keys: 'Esc', description: 'Закрыть диалог или открытую панель' },
     ],
   },
   {
@@ -21,6 +21,7 @@ const GROUPS: ShortcutGroup[] = [
       { keys: 'Ctrl/⌘ + Z', description: 'Отменить последнее изменение' },
       { keys: 'Ctrl/⌘ + Shift + Z, Ctrl/⌘ + Y', description: 'Повторить отменённое изменение' },
       { keys: 'Ctrl/⌘ + K', description: 'Перейти к сцене по названию' },
+      { keys: 'Ctrl/⌘ + H', description: 'Открыть/закрыть «Найти и заменить»' },
       { keys: 'N', description: 'Создать новую сцену (связать с выбранной)' },
       { keys: 'Ctrl/⌘ + D', description: 'Дублировать выбранную сцену' },
       { keys: 'Delete / Backspace', description: 'Удалить выбранную сцену' },

@@ -103,11 +103,24 @@ export function NodeInspector({
       <label className="flex flex-col gap-1 text-xs font-medium text-slate-500 dark:text-slate-400">
         <span className="flex items-center justify-between">
           Текст сцены
-          {node.text.trim() && (
-            <span className="font-normal text-slate-400 dark:text-slate-500">
-              {countWords(node.text)} сл.
-            </span>
-          )}
+          <span className="flex items-center gap-1.5">
+            {node.text.trim() && (
+              <span className="font-normal text-slate-400 dark:text-slate-500">
+                {countWords(node.text)} сл.
+              </span>
+            )}
+            {node.text.trim() && (
+              <button
+                type="button"
+                onClick={() => navigator.clipboard.writeText(node.text)}
+                title="Скопировать текст сцены"
+                aria-label="Скопировать текст сцены"
+                className="font-normal text-slate-400 hover:text-violet-600 dark:hover:text-violet-400"
+              >
+                ⎘
+              </button>
+            )}
+          </span>
         </span>
         <textarea
           value={node.text}

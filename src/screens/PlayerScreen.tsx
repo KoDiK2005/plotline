@@ -28,6 +28,7 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
   const recordEnding = useProgressStore((s) => s.recordEnding)
   const recordPlayStart = useProgressStore((s) => s.recordPlayStart)
   const savePlayState = useProgressStore((s) => s.savePlayState)
+  const clearProgress = useProgressStore((s) => s.clearProgress)
   const progress = useProgressStore((s) => s.getProgress(story.id))
   const recordView = useRatingStore((s) => s.recordView)
 
@@ -185,6 +186,18 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
         )}
         <Button variant="ghost" onClick={() => { setIsNewDiscovery(false); setPlayState(startPlay(story)); setPlayStateStack([]) }}>
           Начать заново
+        </Button>
+        <Button
+          variant="ghost"
+          onClick={() => {
+            clearProgress(story.id)
+            setIsNewDiscovery(false)
+            setPlayState(startPlay(story))
+            setPlayStateStack([])
+          }}
+          title="Сбросить весь прогресс (посещённые сцены, концовки, статистику)"
+        >
+          Сброс прогресса
         </Button>
         {playState.history.length > 1 && (
           <Button

@@ -138,6 +138,17 @@ function EditorScreenInner() {
         setShowJump((v) => !v)
         return
       }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'h') {
+        e.preventDefault()
+        setShowFindReplace((v) => !v)
+        return
+      }
+      if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key === 'Escape') {
+        if (showFindReplace) { setShowFindReplace(false); return }
+        if (showVariables) { setShowVariables(false); return }
+        if (showDescription) { setShowDescription(false); return }
+        if (showIssues) { setShowIssues(false); return }
+      }
       if (inTextField) return
       if (e.ctrlKey || e.metaKey) {
         if (e.key.toLowerCase() === 'z' && !e.shiftKey) {
@@ -171,7 +182,7 @@ function EditorScreenInner() {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [undo, redo])
+  }, [undo, redo, showFindReplace, showVariables, showDescription, showIssues])
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
