@@ -4,6 +4,7 @@ import { Button } from '../components/Button'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { NewStoryDialog } from '../components/NewStoryDialog'
 import { StoryCard } from '../components/StoryCard'
+import { StoryRow } from '../components/StoryRow'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { TopWritersPanel } from '../components/TopWritersPanel'
 import { WriterNameEditor } from '../components/WriterNameEditor'
@@ -34,9 +35,11 @@ export function LibraryScreen() {
   const sort = useSettingsStore((s) => s.librarySort)
   const filter = useSettingsStore((s) => s.libraryFilter)
   const favoritesOnly = useSettingsStore((s) => s.libraryFavoritesOnly)
+  const viewMode = useSettingsStore((s) => s.libraryViewMode)
   const setSort = useSettingsStore((s) => s.setLibrarySort)
   const setFilter = useSettingsStore((s) => s.setLibraryFilter)
   const setFavoritesOnly = useSettingsStore((s) => s.setLibraryFavoritesOnly)
+  const setViewMode = useSettingsStore((s) => s.setLibraryViewMode)
   const openEditor = useUIStore((s) => s.openEditor)
   const openPlayer = useUIStore((s) => s.openPlayer)
   const openShortcuts = useUIStore((s) => s.openShortcuts)
@@ -193,6 +196,14 @@ export function LibraryScreen() {
           >
             ★ Избранное
           </Button>
+          <Button
+            variant="ghost"
+            onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+            title={viewMode === 'grid' ? 'Список' : 'Сетка'}
+            aria-label={viewMode === 'grid' ? 'Переключить в режим списка' : 'Переключить в режим сетки'}
+          >
+            {viewMode === 'grid' ? '☰' : '⊞'}
+          </Button>
         </div>
         <div className="flex flex-wrap gap-2">
           <input
@@ -265,7 +276,7 @@ export function LibraryScreen() {
         <p className="mt-16 text-center text-sm text-slate-500 dark:text-slate-500">
           {query || filter !== 'all' || favoritesOnly ? 'Ничего не найдено.' : 'Историй пока нет — создайте первую!'}
         </p>
-      ) : (
+      ) : viewMode === 'grid' ? (
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {storyList.map((story) => (
             <StoryCard
@@ -276,6 +287,18 @@ export function LibraryScreen() {
               onDuplicate={duplicateStory}
               onDelete={setPendingDeleteId}
               onResetProgress={setPendingResetProgressId}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="mt-4 flex flex-col gap-2">
+          {storyList.map((story) => (
+            <StoryRow
+              key={story.id}
+              story={story}
+              onPlay={openPlayer}
+              onEdit={openEditor}
+              onDelete={setPendingDeleteId}
             />
           ))}
         </div>

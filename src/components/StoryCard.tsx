@@ -9,6 +9,7 @@ import { useFavoriteStore } from '../store/useFavoriteStore'
 import { useProgressStore } from '../store/useProgressStore'
 import { useRatingStore } from '../store/useRatingStore'
 import { downloadJson, downloadText, slugifyFilename } from '../utils/file'
+import { relativeTime } from '../utils/relativeTime'
 import { Button } from './Button'
 import { StatPill } from './StatPill'
 
@@ -38,6 +39,7 @@ export const StoryCard = memo(function StoryCard({
   const stats = useMemo(() => getStoryStats(story), [story])
   const readingMinutes = useMemo(() => estimateReadingMinutes(story), [story])
   const progress = useProgressStore((s) => s.getProgress(story.id))
+  const lastPlayed = progress.lastPlayedAt ? relativeTime(progress.lastPlayedAt) : null
   const allEndingsFound = stats.endingCount > 0 && progress.discoveredEndingIds.length >= stats.endingCount
   const isFavorite = useFavoriteStore((s) => s.isFavorite(story.id))
   const toggleFavorite = useFavoriteStore((s) => s.toggleFavorite)
@@ -91,6 +93,9 @@ export const StoryCard = memo(function StoryCard({
         )}
         {progress.discoveredEndingIds.length > 0 && (
           <StatPill label={`из ${stats.endingCount} найдено`} value={progress.discoveredEndingIds.length} />
+        )}
+        {lastPlayed && (
+          <StatPill label="играли" value={lastPlayed} />
         )}
         <StatPill label="просмотров" value={ratingStats.views} />
         <button

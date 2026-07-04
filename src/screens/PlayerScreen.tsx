@@ -152,8 +152,16 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
           {story.title}
         </h1>
         <span className="hidden text-xs text-slate-500 dark:text-slate-500 sm:inline">
-          Концовок найдено: {progress.discoveredEndingIds.length}/{stats.endingCount}
+          Концовок: {progress.discoveredEndingIds.length}/{stats.endingCount}
         </span>
+        {stats.reachableCount > 0 && (
+          <span
+            className="hidden text-xs text-slate-500 dark:text-slate-500 sm:inline"
+            title="Сцен посещено"
+          >
+            Сцен: {visitedSet.size}/{stats.reachableCount}
+          </span>
+        )}
         <Button variant="ghost" onClick={() => setShowMap((v) => !v)}>
           {showMap ? 'Текст' : 'Карта'}
         </Button>

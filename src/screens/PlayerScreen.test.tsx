@@ -195,11 +195,11 @@ describe('PlayerScreen', () => {
     const user = userEvent.setup()
     render(<PlayerScreen />)
 
-    expect(screen.getByText('Концовок найдено: 0/2')).toBeInTheDocument()
+    expect(screen.getByText('Концовок: 0/2')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Be brave' }))
 
-    expect(await screen.findByText('Концовок найдено: 1/2')).toBeInTheDocument()
+    expect(await screen.findByText('Концовок: 1/2')).toBeInTheDocument()
   })
 
   it('selects a choice by pressing its number key', async () => {
