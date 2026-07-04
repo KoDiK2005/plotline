@@ -71,6 +71,13 @@ function EditorScreenInner() {
   }, [story, setNodes, setEdges])
 
   useEffect(() => {
+    if (!story) return
+    const prev = document.title
+    document.title = `${story.title} · Редактор — Plotline`
+    return () => { document.title = prev }
+  }, [story?.title])
+
+  useEffect(() => {
     if (currentStoryId && !story) backToLibrary()
   }, [currentStoryId, story, backToLibrary])
 

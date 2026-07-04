@@ -21,6 +21,7 @@ interface ProgressState {
   savePlayState: (storyId: string, playState: PlayState | null) => void
   clearProgress: (storyId: string) => void
   getProgress: (storyId: string) => StoryProgress
+  mergeProgress: (imported: Record<string, StoryProgress>) => void
 }
 
 const emptyProgress: StoryProgress = {
@@ -123,6 +124,27 @@ export const useProgressStore = create<ProgressState>()(
           const progress = { ...state.progress }
           delete progress[storyId]
           return { progress }
+        })
+      },
+
+      mergeProgress: (imported) => {
+        set((state) => {
+          const merged: Record<string, StoryProgress> = { ...state.progress }
+          for (const [storyId, imp] of Object.entries(imported)) {
+            const existing = withDefaults(state.progress[storyId])
+            const visitedNodeIds = [...new Set([...existing.visitedNodeIds, ...imp.visitedNodeIds])]
+            const visitedChoiceIds = [...new Set([...existing.visitedChoiceIds, ...imp.visitedChoiceIds])]
+            const discoveredEndingIds = [...new Set([...existing.discoveredEndingIds, ...imp.discoveredEndingIds])]
+            merged[storyId] = {
+              visitedNodeIds,
+              visitedChoiceIds,
+              discoveredEndingIds,
+              playCount: Math.max(existing.playCount, imp.playCount),
+              lastPlayedAt: Math.max(existing.lastPlayedAt, imp.lastPlayedAt),
+              savedPlay: existing.savedPlay ?? imp.savedPlay,
+            }
+          }
+          return { progress: merged }
         })
       },
 

@@ -13,7 +13,7 @@ import { SORT_LABELS, sortStories, type SortOption } from '../engine/librarySort
 import { parseLibraryBackup, parseStoryJson } from '../engine/storySchema'
 import { useFavoriteStore } from '../store/useFavoriteStore'
 import { useLibraryStore } from '../store/useLibraryStore'
-import { useProgressStore } from '../store/useProgressStore'
+import { useProgressStore, type StoryProgress } from '../store/useProgressStore'
 import { useRatingStore } from '../store/useRatingStore'
 import { useSettingsStore } from '../store/useSettingsStore'
 import { useUIStore } from '../store/useUIStore'
@@ -27,6 +27,7 @@ export function LibraryScreen() {
   const importStory = useLibraryStore((s) => s.importStory)
   const progress = useProgressStore((s) => s.progress)
   const clearProgress = useProgressStore((s) => s.clearProgress)
+  const mergeProgress = useProgressStore((s) => s.mergeProgress)
   const favorites = useFavoriteStore((s) => s.favorites)
   const ratingStats = useRatingStore((s) => s.stats)
   const loadRatingStats = useRatingStore((s) => s.loadStats)
@@ -48,6 +49,7 @@ export function LibraryScreen() {
   const [showTopWriters, setShowTopWriters] = useState(false)
   const [showNewStory, setShowNewStory] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const progressImportRef = useRef<HTMLInputElement>(null)
 
   const storyIds = useMemo(() => Object.keys(stories), [stories])
   useEffect(() => {
@@ -72,7 +74,9 @@ export function LibraryScreen() {
     const q = query.toLowerCase()
     const matching = Object.values(stories).filter(
       (s) =>
-        (s.title.toLowerCase().includes(q) || s.description.toLowerCase().includes(q)) &&
+        (s.title.toLowerCase().includes(q) ||
+          s.description.toLowerCase().includes(q) ||
+          (s.author && s.author.toLowerCase().includes(q))) &&
         (!favoritesOnly || favorites[s.id]),
     )
     const sorted = sortStories(filterStories(matching, progress, filter), sort, ratingByStoryId)
@@ -96,6 +100,24 @@ export function LibraryScreen() {
       setError('Файл не похож на историю Plotline: проверьте, что это экспортированный JSON.')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось импортировать файл.')
+    }
+  }
+
+  async function handleImportProgress(file: File) {
+    setError(null)
+    try {
+      const data = await readJsonFile(file)
+      if (
+        typeof data !== 'object' ||
+        data === null ||
+        typeof (data as Record<string, unknown>).progress !== 'object'
+      ) {
+        setError('Файл не является резервной копией прогресса Plotline.')
+        return
+      }
+      mergeProgress((data as { progress: Record<string, StoryProgress> }).progress)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось импортировать прогресс.')
     }
   }
 
@@ -176,6 +198,17 @@ export function LibraryScreen() {
               e.target.value = ''
             }}
           />
+          <input
+            ref={progressImportRef}
+            type="file"
+            accept="application/json"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) void handleImportProgress(file)
+              e.target.value = ''
+            }}
+          />
           <Button variant="ghost" onClick={() => fileInputRef.current?.click()}>
             Импортировать
           </Button>
@@ -184,6 +217,20 @@ export function LibraryScreen() {
             onClick={() => downloadJson('plotline-library.json', { stories: Object.values(stories) })}
           >
             Экспортировать всё
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => downloadJson('plotline-progress.json', { progress })}
+            title="Сохранить прогресс прохождения в файл"
+          >
+            Сохранить прогресс
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => progressImportRef.current?.click()}
+            title="Загрузить прогресс прохождения из файла"
+          >
+            Загрузить прогресс
           </Button>
           <Button variant="primary" onClick={() => setShowNewStory(true)}>
             + Новая история

@@ -38,6 +38,12 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
   const [isNewDiscovery, setIsNewDiscovery] = useState(false)
 
   useEffect(() => {
+    const prev = document.title
+    document.title = `${story.title} — Plotline`
+    return () => { document.title = prev }
+  }, [story.title])
+
+  useEffect(() => {
     recordPlayStart(story.id)
     void recordView(story.id, { title: story.title, authorName: story.author, writerId: story.writerId })
   }, [story, recordPlayStart, recordView])
