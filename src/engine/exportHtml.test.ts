@@ -43,4 +43,36 @@ describe('buildStandaloneHtml', () => {
     expect(html).toContain('currentChoices')
     expect(html).toContain("className = 'key'")
   })
+
+  it('omits private author notes from the embedded story JSON', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { notes: 'Secret plan only the author should see' })
+
+    const html = buildStandaloneHtml(story)
+    expect(html).not.toContain('Secret plan only the author should see')
+    expect(html).not.toContain('notes')
+  })
+
+  it('includes localStorage save/resume logic keyed by story id', () => {
+    const story = createStory('Save Test')
+    const html = buildStandaloneHtml(story)
+    expect(html).toContain('SAVE_KEY')
+    expect(html).toContain("'plotline-save-'")
+    expect(html).toContain('localStorage.setItem')
+    expect(html).toContain('localStorage.getItem')
+    expect(html).toContain('localStorage.removeItem')
+    expect(html).toContain('Продолжить')
+    expect(html).toContain('Начать заново')
+  })
+
+  it('renders a variable panel when the story has variables', () => {
+    let story = createStory('Var Test')
+    const { story: withVar } = addVariable(story, 'Courage', 0)
+    story = withVar
+    const html = buildStandaloneHtml(story)
+    expect(html).toContain('Переменные')
+    expect(html).toContain('STORY.variables')
+    expect(html).toContain("className = 'vars'")
+  })
 })

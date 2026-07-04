@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { PlayState } from '../engine/play'
+import { createDebouncedStorage } from './debouncedStorage'
 
 export interface StoryProgress {
   visitedNodeIds: string[]
@@ -127,6 +128,6 @@ export const useProgressStore = create<ProgressState>()(
 
       getProgress: (storyId) => withDefaults(get().progress[storyId]),
     }),
-    { name: 'plotline-progress' },
+    { name: 'plotline-progress', storage: createDebouncedStorage() },
   ),
 )

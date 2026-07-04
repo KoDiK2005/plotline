@@ -12,16 +12,19 @@ export function createEmptyNode(position: { x: number; y: number }, title = 'Н�
     text: '',
     choices: [],
     position,
+    notes: '',
   }
 }
 
-export function createStory(title = 'Новая история', description = ''): Story {
+export function createStory(title = 'Новая история', description = '', author = '', writerId = ''): Story {
   const startNode = createEmptyNode({ x: 0, y: 0 }, 'Начало')
   const now = Date.now()
   return {
     id: generateId('story'),
     title,
     description,
+    author,
+    writerId,
     startNodeId: startNode.id,
     nodes: { [startNode.id]: startNode },
     variables: [],
@@ -30,7 +33,7 @@ export function createStory(title = 'Новая история', description = '
   }
 }
 
-export function updateMeta(story: Story, patch: Partial<Pick<Story, 'title' | 'description'>>): Story {
+export function updateMeta(story: Story, patch: Partial<Pick<Story, 'title' | 'description' | 'author'>>): Story {
   return touch({ ...story, ...patch })
 }
 
@@ -43,7 +46,7 @@ export function addNode(story: Story, position = { x: 0, y: 0 }): { story: Story
 export function updateNode(
   story: Story,
   nodeId: string,
-  patch: Partial<Pick<StoryNode, 'title' | 'text'>>,
+  patch: Partial<Pick<StoryNode, 'title' | 'text' | 'notes'>>,
 ): Story {
   const node = story.nodes[nodeId]
   if (!node) return story
@@ -63,6 +66,10 @@ export function deleteNode(story: Story, nodeId: string): Story {
   const nodes: Record<string, StoryNode> = {}
   for (const [id, node] of Object.entries(story.nodes)) {
     if (id === nodeId) continue
+    if (!node.choices.some((choice) => choice.targetNodeId === nodeId)) {
+      nodes[id] = node
+      continue
+    }
     nodes[id] = {
       ...node,
       choices: node.choices.map((choice) =>
@@ -90,6 +97,7 @@ export function duplicateNode(story: Story, nodeId: string): { story: Story; nod
     text: node.text,
     choices: node.choices.map((choice) => ({ ...choice, id: generateId('choice') })),
     position: { x: node.position.x + 40, y: node.position.y + 40 },
+    notes: node.notes,
   }
   const nodes = { ...story.nodes, [newNode.id]: newNode }
   return { story: touch({ ...story, nodes }), nodeId: newNode.id }
@@ -134,10 +142,18 @@ export function deleteChoice(story: Story, nodeId: string, choiceId: string): St
 }
 
 export function deleteDanglingChoices(story: Story): Story {
+  let changed = false
   const nodes: Record<string, StoryNode> = {}
   for (const [id, node] of Object.entries(story.nodes)) {
-    nodes[id] = { ...node, choices: node.choices.filter((c) => c.targetNodeId !== null) }
+    const choices = node.choices.filter((c) => c.targetNodeId !== null)
+    if (choices.length === node.choices.length) {
+      nodes[id] = node
+      continue
+    }
+    changed = true
+    nodes[id] = { ...node, choices }
   }
+  if (!changed) return story
   return touch({ ...story, nodes })
 }
 
@@ -205,6 +221,15 @@ export function deleteVariable(story: Story, variableId: string): Story {
   const variables = story.variables.filter((v) => v.id !== variableId)
   const nodes: Record<string, StoryNode> = {}
   for (const [id, node] of Object.entries(story.nodes)) {
+    const usesVariable = node.choices.some(
+      (choice) =>
+        choice.condition?.variableId === variableId ||
+        choice.effects.some((effect) => effect.variableId === variableId),
+    )
+    if (!usesVariable) {
+      nodes[id] = node
+      continue
+    }
     nodes[id] = {
       ...node,
       choices: node.choices.map((choice) => ({
@@ -229,10 +254,16 @@ export function countVariableUsages(story: Story, variableId: string): number {
 }
 
 export function applyPositions(story: Story, positions: Record<string, { x: number; y: number }>): Story {
+  let changed = false
   const nodes = { ...story.nodes }
   for (const [id, position] of Object.entries(positions)) {
-    if (nodes[id]) nodes[id] = { ...nodes[id], position }
+    const node = nodes[id]
+    if (!node) continue
+    if (node.position.x === position.x && node.position.y === position.y) continue
+    changed = true
+    nodes[id] = { ...node, position }
   }
+  if (!changed) return story
   return touch({ ...story, nodes })
 }
 

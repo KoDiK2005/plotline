@@ -3,6 +3,7 @@ import {
   addChoice,
   addNode,
   addVariable,
+  applyPositions,
   countVariableUsages,
   createStory,
   deleteChoice,
@@ -45,6 +46,16 @@ describe('addNode / updateNode', () => {
     const story = createStory()
     const result = updateNode(story, 'missing', { title: 'x' })
     expect(result).toBe(story)
+  })
+
+  it('creates a new node with empty notes and allows editing them', () => {
+    let story = createStory()
+    const { story: withNode, nodeId } = addNode(story, { x: 0, y: 0 })
+    story = withNode
+    expect(story.nodes[nodeId].notes).toBe('')
+
+    story = updateNode(story, nodeId, { notes: 'Remember to foreshadow the ending here.' })
+    expect(story.nodes[nodeId].notes).toBe('Remember to foreshadow the ending here.')
   })
 })
 
@@ -110,6 +121,22 @@ describe('deleteDanglingChoices', () => {
 
     const result = deleteDanglingChoices(story)
     expect(result.nodes[startId].choices).toHaveLength(1)
+  })
+
+  it('returns the same story when nothing is dangling, and keeps unaffected node references stable otherwise', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    const { story: withSecond, nodeId: secondId } = addNode(story)
+    story = withSecond
+    story = addChoice(story, startId, 'Linked')
+    const choiceId = story.nodes[startId].choices[0].id
+    story = linkChoice(story, startId, choiceId, secondId)
+    expect(deleteDanglingChoices(story)).toBe(story)
+
+    story = addChoice(story, startId, 'Dangling')
+    const untouched = story.nodes[secondId]
+    const result = deleteDanglingChoices(story)
+    expect(result.nodes[secondId]).toBe(untouched)
   })
 })
 
@@ -186,13 +213,28 @@ describe('deleteNode', () => {
     expect(story.startNodeId).toBeNull()
     expect(Object.keys(story.nodes)).toHaveLength(0)
   })
+
+  it('keeps the reference of nodes whose choices do not target the deleted node', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    const { story: s1, nodeId: secondId } = addNode(story)
+    story = s1
+    const { story: s2, nodeId: thirdId } = addNode(story)
+    story = s2
+    story = addChoice(story, startId, 'Go to second')
+    story = linkChoice(story, startId, story.nodes[startId].choices[0].id, secondId)
+
+    const untouched = story.nodes[startId]
+    story = deleteNode(story, thirdId)
+    expect(story.nodes[startId]).toBe(untouched)
+  })
 })
 
 describe('duplicateNode', () => {
   it('clones a node with a "(копия)" title, the same text, and fresh choice ids pointing at the same targets', () => {
     let story = createStory()
     const startId = story.startNodeId!
-    story = updateNode(story, startId, { title: 'Лес', text: 'Тёмный лес.' })
+    story = updateNode(story, startId, { title: 'Лес', text: 'Тёмный лес.', notes: 'Add a wolf later.' })
     const { story: s1, nodeId: otherId } = addNode(story)
     story = s1
     story = addChoice(story, startId, 'Идти вперёд')
@@ -206,6 +248,7 @@ describe('duplicateNode', () => {
     const copy = story.nodes[copyId!]
     expect(copy.title).toBe('Лес (копия)')
     expect(copy.text).toBe('Тёмный лес.')
+    expect(copy.notes).toBe('Add a wolf later.')
     expect(copy.choices).toHaveLength(1)
     expect(copy.choices[0].id).not.toBe(story.nodes[startId].choices[0].id)
     expect(copy.choices[0].targetNodeId).toBe(otherId)
@@ -292,6 +335,22 @@ describe('variables', () => {
     expect(story.nodes[startId].choices[0].effects).toEqual([])
   })
 
+  it('keeps the reference of nodes whose choices do not reference the deleted variable', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    const { story: withVar, variableId } = addVariable(story, 'Key', 0)
+    story = withVar
+    const { story: withSecond, nodeId: secondId } = addNode(story)
+    story = withSecond
+    story = addChoice(story, startId, 'Use key')
+    const choiceId = story.nodes[startId].choices[0].id
+    story = setChoiceCondition(story, startId, choiceId, { variableId, comparator: 'gte', value: 1 })
+
+    const untouched = story.nodes[secondId]
+    story = deleteVariable(story, variableId)
+    expect(story.nodes[secondId]).toBe(untouched)
+  })
+
   it('counts how many conditions and effects reference a variable', () => {
     let story = createStory()
     const startId = story.startNodeId!
@@ -347,5 +406,32 @@ describe('setChoiceCondition / setChoiceEffects', () => {
 
     story = setChoiceEffects(story, startId, choiceId, [])
     expect(story.nodes[startId].choices[0].effects).toEqual([])
+  })
+})
+
+describe('applyPositions', () => {
+  it('moves only the nodes whose position actually changed, keeping others by reference', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    const { story: withSecond, nodeId: secondId } = addNode(story, { x: 0, y: 0 })
+    story = withSecond
+    const untouchedSecond = story.nodes[secondId]
+
+    const next = applyPositions(story, {
+      [startId]: { x: 200, y: 100 },
+      [secondId]: { x: 0, y: 0 },
+    })
+
+    expect(next.nodes[startId].position).toEqual({ x: 200, y: 100 })
+    expect(next.nodes[secondId]).toBe(untouchedSecond)
+  })
+
+  it('returns the original story when no position actually changes', () => {
+    const story = createStory()
+    const startId = story.startNodeId!
+    const { x, y } = story.nodes[startId].position
+
+    const next = applyPositions(story, { [startId]: { x, y } })
+    expect(next).toBe(story)
   })
 })

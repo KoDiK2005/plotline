@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import type { Comparator, Story, VariableType } from '../../types/story'
 import {
   addChoice,
@@ -47,10 +48,13 @@ export function NodeInspector({
   onJumpToNode,
 }: NodeInspectorProps) {
   const node = story.nodes[nodeId]
+  const otherNodes = useMemo(
+    () => Object.values(story.nodes).filter((n) => n.id !== nodeId),
+    [story.nodes, nodeId],
+  )
   if (!node) return null
 
   const isStart = story.startNodeId === nodeId
-  const otherNodes = Object.values(story.nodes).filter((n) => n.id !== nodeId)
 
   function variableType(variableId: string): VariableType {
     return story.variables.find((v) => v.id === variableId)?.type ?? 'number'
@@ -85,6 +89,17 @@ export function NodeInspector({
           onChange={(e) => onUpdate((s) => updateNode(s, nodeId, { text: e.target.value }))}
           rows={6}
           className={`${fieldClass} resize-none`}
+        />
+      </label>
+
+      <label className="flex flex-col gap-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+        Заметки автора <span className="font-normal italic text-slate-400">(видны только вам, не игроку)</span>
+        <textarea
+          value={node.notes}
+          onChange={(e) => onUpdate((s) => updateNode(s, nodeId, { notes: e.target.value }))}
+          rows={3}
+          placeholder="Идеи, планы по сюжету, TODO..."
+          className={`${fieldClass} resize-none border-dashed`}
         />
       </label>
 

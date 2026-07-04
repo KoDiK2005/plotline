@@ -8,6 +8,7 @@ import { getStoryStats } from '../engine/traverse'
 import type { Story } from '../types/story'
 import { useLibraryStore } from '../store/useLibraryStore'
 import { useProgressStore } from '../store/useProgressStore'
+import { useRatingStore } from '../store/useRatingStore'
 import { useUIStore } from '../store/useUIStore'
 
 const nodeTypes = { mapScene: MapNode }
@@ -26,6 +27,7 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
   const recordPlayStart = useProgressStore((s) => s.recordPlayStart)
   const savePlayState = useProgressStore((s) => s.savePlayState)
   const progress = useProgressStore((s) => s.getProgress(story.id))
+  const recordView = useRatingStore((s) => s.recordView)
 
   const [playState, setPlayState] = useState<PlayState | null>(() => progress.savedPlay ?? startPlay(story))
   const [showMap, setShowMap] = useState(false)
@@ -33,7 +35,8 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
 
   useEffect(() => {
     recordPlayStart(story.id)
-  }, [story.id, recordPlayStart])
+    void recordView(story.id, { title: story.title, authorName: story.author, writerId: story.writerId })
+  }, [story, recordPlayStart, recordView])
 
   useEffect(() => {
     if (!playState) return
@@ -124,6 +127,7 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
             nodesConnectable={false}
             elementsSelectable={false}
             fitView
+            onlyRenderVisibleElements
             className="bg-slate-100 dark:bg-slate-950"
           >
             <Background />
@@ -184,6 +188,26 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
                 </button>
               ))}
             </div>
+          )}
+
+          {story.variables.length > 0 && (
+            <details className="text-xs text-slate-500 dark:text-slate-500">
+              <summary className="cursor-pointer select-none">Переменные</summary>
+              <dl className="mt-2 flex flex-col gap-0.5">
+                {story.variables.map((v) => (
+                  <div key={v.id} className="flex gap-2">
+                    <dt className="font-medium text-slate-700 dark:text-slate-300">{v.name}</dt>
+                    <dd>
+                      {v.type === 'boolean'
+                        ? playState.variables[v.id] === 1
+                          ? 'Да'
+                          : 'Нет'
+                        : (playState.variables[v.id] ?? v.initialValue)}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </details>
           )}
 
           {playState.history.length > 1 && (

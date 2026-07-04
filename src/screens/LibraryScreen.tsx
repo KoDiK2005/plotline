@@ -1,19 +1,23 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AchievementsPanel } from '../components/AchievementsPanel'
 import { Button } from '../components/Button'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { NewStoryDialog } from '../components/NewStoryDialog'
 import { StoryCard } from '../components/StoryCard'
 import { ThemeToggle } from '../components/ThemeToggle'
+import { TopWritersPanel } from '../components/TopWritersPanel'
+import { WriterNameEditor } from '../components/WriterNameEditor'
 import { computeAchievements } from '../engine/achievements'
-import { buildStandaloneHtml } from '../engine/exportHtml'
 import { FILTER_LABELS, filterStories, type FilterOption } from '../engine/libraryFilter'
 import { SORT_LABELS, sortStories, type SortOption } from '../engine/librarySort'
 import { parseLibraryBackup, parseStoryJson } from '../engine/storySchema'
+import { useFavoriteStore } from '../store/useFavoriteStore'
 import { useLibraryStore } from '../store/useLibraryStore'
 import { useProgressStore } from '../store/useProgressStore'
+import { useRatingStore } from '../store/useRatingStore'
+import { useSettingsStore } from '../store/useSettingsStore'
 import { useUIStore } from '../store/useUIStore'
-import { downloadJson, downloadText, readJsonFile, slugifyFilename } from '../utils/file'
+import { downloadJson, readJsonFile } from '../utils/file'
 
 export function LibraryScreen() {
   const stories = useLibraryStore((s) => s.stories)
@@ -23,19 +27,32 @@ export function LibraryScreen() {
   const importStory = useLibraryStore((s) => s.importStory)
   const progress = useProgressStore((s) => s.progress)
   const clearProgress = useProgressStore((s) => s.clearProgress)
+  const favorites = useFavoriteStore((s) => s.favorites)
+  const ratingStats = useRatingStore((s) => s.stats)
+  const loadRatingStats = useRatingStore((s) => s.loadStats)
+  const sort = useSettingsStore((s) => s.librarySort)
+  const filter = useSettingsStore((s) => s.libraryFilter)
+  const favoritesOnly = useSettingsStore((s) => s.libraryFavoritesOnly)
+  const setSort = useSettingsStore((s) => s.setLibrarySort)
+  const setFilter = useSettingsStore((s) => s.setLibraryFilter)
+  const setFavoritesOnly = useSettingsStore((s) => s.setLibraryFavoritesOnly)
   const openEditor = useUIStore((s) => s.openEditor)
   const openPlayer = useUIStore((s) => s.openPlayer)
   const openShortcuts = useUIStore((s) => s.openShortcuts)
 
   const [query, setQuery] = useState('')
-  const [sort, setSort] = useState<SortOption>('updated')
-  const [filter, setFilter] = useState<FilterOption>('all')
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [pendingResetProgressId, setPendingResetProgressId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [showAchievements, setShowAchievements] = useState(false)
+  const [showTopWriters, setShowTopWriters] = useState(false)
   const [showNewStory, setShowNewStory] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const storyIds = useMemo(() => Object.keys(stories), [stories])
+  useEffect(() => {
+    if (storyIds.length > 0) void loadRatingStats(storyIds)
+  }, [storyIds, loadRatingStats])
 
   const achievements = useMemo(
     () => computeAchievements(Object.values(stories), progress),
@@ -43,13 +60,24 @@ export function LibraryScreen() {
   )
   const unlockedCount = achievements.filter((a) => a.unlocked).length
 
+  const ratingByStoryId = useMemo(() => {
+    const result: Record<string, number> = {}
+    for (const [id, s] of Object.entries(ratingStats)) {
+      result[id] = s.likes * 5 + s.views
+    }
+    return result
+  }, [ratingStats])
+
   const storyList = useMemo(() => {
     const q = query.toLowerCase()
     const matching = Object.values(stories).filter(
-      (s) => s.title.toLowerCase().includes(q) || s.description.toLowerCase().includes(q),
+      (s) =>
+        (s.title.toLowerCase().includes(q) || s.description.toLowerCase().includes(q)) &&
+        (!favoritesOnly || favorites[s.id]),
     )
-    return sortStories(filterStories(matching, progress, filter), sort)
-  }, [stories, query, sort, filter, progress])
+    const sorted = sortStories(filterStories(matching, progress, filter), sort, ratingByStoryId)
+    return sorted.sort((a, b) => Number(Boolean(favorites[b.id])) - Number(Boolean(favorites[a.id])))
+  }, [stories, query, sort, filter, progress, favorites, favoritesOnly, ratingByStoryId])
 
   async function handleImportFile(file: File) {
     setError(null)
@@ -81,6 +109,10 @@ export function LibraryScreen() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <WriterNameEditor />
+          <Button variant="ghost" onClick={() => setShowTopWriters(true)}>
+            🏅 Топ авторов
+          </Button>
           <Button variant="ghost" onClick={() => setShowAchievements(true)}>
             🏆 Достижения · {unlockedCount}/{achievements.length}
           </Button>
@@ -124,6 +156,13 @@ export function LibraryScreen() {
               </option>
             ))}
           </select>
+          <Button
+            variant={favoritesOnly ? 'secondary' : 'ghost'}
+            aria-pressed={favoritesOnly}
+            onClick={() => setFavoritesOnly(!favoritesOnly)}
+          >
+            ★ Избранное
+          </Button>
         </div>
         <div className="flex flex-wrap gap-2">
           <input
@@ -169,7 +208,7 @@ export function LibraryScreen() {
 
       {storyList.length === 0 ? (
         <p className="mt-16 text-center text-sm text-slate-500 dark:text-slate-500">
-          {query || filter !== 'all' ? 'Ничего не найдено.' : 'Историй пока нет — создайте первую!'}
+          {query || filter !== 'all' || favoritesOnly ? 'Ничего не найдено.' : 'Историй пока нет — создайте первую!'}
         </p>
       ) : (
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -177,13 +216,11 @@ export function LibraryScreen() {
             <StoryCard
               key={story.id}
               story={story}
-              onPlay={() => openPlayer(story.id)}
-              onEdit={() => openEditor(story.id)}
-              onDuplicate={() => duplicateStory(story.id)}
-              onExport={() => downloadJson(`${slugifyFilename(story.title)}.json`, story)}
-              onExportHtml={() => downloadText(`${slugifyFilename(story.title)}.html`, buildStandaloneHtml(story), 'text/html')}
-              onDelete={() => setPendingDeleteId(story.id)}
-              onResetProgress={() => setPendingResetProgressId(story.id)}
+              onPlay={openPlayer}
+              onEdit={openEditor}
+              onDuplicate={duplicateStory}
+              onDelete={setPendingDeleteId}
+              onResetProgress={setPendingResetProgressId}
             />
           ))}
         </div>
@@ -217,6 +254,8 @@ export function LibraryScreen() {
       {showAchievements && (
         <AchievementsPanel achievements={achievements} onClose={() => setShowAchievements(false)} />
       )}
+
+      {showTopWriters && <TopWritersPanel onClose={() => setShowTopWriters(false)} />}
 
       {showNewStory && (
         <NewStoryDialog

@@ -4,6 +4,8 @@ import type { Story } from '../types/story'
 import { sampleStories } from '../data/sampleStories'
 import * as ops from '../engine/storyOps'
 import { buildFromTemplate, type TemplateId } from '../engine/templates'
+import { createDebouncedStorage } from './debouncedStorage'
+import { useWriterStore } from './useWriterStore'
 
 interface LibraryState {
   stories: Record<string, Story>
@@ -25,9 +27,10 @@ export const useLibraryStore = create<LibraryState>()(
       stories: sampleStoriesRecord(),
 
       createStory: (title, templateId) => {
+        const { writerId, displayName } = useWriterStore.getState()
         const story = templateId
-          ? buildFromTemplate(templateId, title ?? 'Новая история')
-          : ops.createStory(title)
+          ? buildFromTemplate(templateId, title ?? 'Новая история', { author: displayName, writerId })
+          : ops.createStory(title, '', displayName, writerId)
         set((state) => ({ stories: { ...state.stories, [story.id]: story } }))
         return story.id
       },
@@ -64,6 +67,6 @@ export const useLibraryStore = create<LibraryState>()(
 
       resetToSamples: () => set({ stories: sampleStoriesRecord() }),
     }),
-    { name: 'plotline-library' },
+    { name: 'plotline-library', storage: createDebouncedStorage() },
   ),
 )

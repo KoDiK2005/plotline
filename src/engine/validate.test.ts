@@ -242,4 +242,66 @@ describe('validateStory', () => {
     const issues = validateStory(story)
     expect(issues.some((i) => i.id === `duplicate-variable-name-${variableId}`)).toBe(false)
   })
+
+  it('warns about two choices in the same scene sharing the same text, case-insensitively', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { text: 'A fork in the road.' })
+    story = addChoice(story, startId, 'Go left')
+    story = addChoice(story, startId, 'go LEFT')
+    const [firstId, secondId] = story.nodes[startId].choices.map((c) => c.id)
+
+    const issues = validateStory(story)
+    expect(issues.some((i) => i.id === `duplicate-choice-text-${firstId}`)).toBe(true)
+    expect(issues.some((i) => i.id === `duplicate-choice-text-${secondId}`)).toBe(true)
+  })
+
+  it('does not warn about duplicate choice text when choices are in different scenes', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { text: 'The beginning.' })
+    story = addChoice(story, startId, 'Continue')
+    const { story: withOther, nodeId: otherId } = addNode(story)
+    story = withOther
+    story = addChoice(story, otherId, 'Continue')
+
+    const issues = validateStory(story)
+    expect(issues.some((i) => i.id.startsWith('duplicate-choice-text-'))).toBe(false)
+  })
+
+  it('does not warn about duplicate choice text when both choices are empty', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { text: 'The beginning.' })
+    story = addChoice(story, startId, '')
+    story = addChoice(story, startId, '')
+
+    const issues = validateStory(story)
+    expect(issues.some((i) => i.id.startsWith('duplicate-choice-text-'))).toBe(false)
+  })
+
+  it('warns about two scenes sharing the same title, case-insensitively', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { title: 'The Cave' })
+    const { story: withOther, nodeId: otherId } = addNode(story)
+    story = withOther
+    story = updateNode(story, otherId, { title: 'the cave' })
+
+    const issues = validateStory(story)
+    expect(issues.some((i) => i.id === `duplicate-node-title-${startId}`)).toBe(true)
+    expect(issues.some((i) => i.id === `duplicate-node-title-${otherId}`)).toBe(true)
+  })
+
+  it('does not warn about duplicate node titles when all titles are unique', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    story = updateNode(story, startId, { title: 'The Cave' })
+    const { story: withOther, nodeId: otherId } = addNode(story)
+    story = withOther
+    story = updateNode(story, otherId, { title: 'The Forest' })
+
+    const issues = validateStory(story)
+    expect(issues.some((i) => i.id.startsWith('duplicate-node-title-'))).toBe(false)
+  })
 })

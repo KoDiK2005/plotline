@@ -57,6 +57,7 @@ function parseStoryNode(value: unknown): StoryNode | null {
   ) {
     return null
   }
+  if (n.notes !== undefined && typeof n.notes !== 'string') return null
 
   const choices = n.choices.map(parseChoice)
   if (choices.some((c) => c === null)) return null
@@ -67,6 +68,7 @@ function parseStoryNode(value: unknown): StoryNode | null {
     text: n.text,
     choices: choices as Choice[],
     position: n.position as { x: number; y: number },
+    notes: (n.notes as string | undefined) ?? '',
   }
 }
 
@@ -96,6 +98,8 @@ export function parseStoryJson(data: unknown): Story | null {
   ) {
     return null
   }
+  if (s.author !== undefined && typeof s.author !== 'string') return null
+  if (s.writerId !== undefined && typeof s.writerId !== 'string') return null
 
   if (s.variables !== undefined && !(Array.isArray(s.variables) && s.variables.every(isStoryVariable))) {
     return null
@@ -113,6 +117,8 @@ export function parseStoryJson(data: unknown): Story | null {
     id: s.id,
     title: s.title,
     description: s.description,
+    author: (s.author as string | undefined) ?? '',
+    writerId: (s.writerId as string | undefined) ?? '',
     startNodeId: s.startNodeId as string | null,
     nodes,
     variables: (s.variables as StoryVariable[] | undefined) ?? [],

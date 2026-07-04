@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addChoice, createStory, updateChoiceText, updateNode } from './storyOps'
+import { addChoice, addNode, createStory, updateChoiceText, updateNode } from './storyOps'
 import { findMatches, replaceAll } from './findReplace'
 
 function sampleStory() {
@@ -122,5 +122,19 @@ describe('replaceAll', () => {
     const { story, startId } = sampleStory()
     const next = replaceAll(story, 'ТРОПА', 'дорога', { caseSensitive: true })
     expect(next.nodes[startId].title).toBe('Лесная тропа')
+  })
+
+  it('keeps the same node object reference for scenes with no match', () => {
+    let story = sampleStory().story
+    const { story: s2, nodeId: otherId } = addNode(story)
+    story = s2
+    const untouched = story.nodes[otherId]
+    const next = replaceAll(story, 'волк', 'медведь')
+    expect(next.nodes[otherId]).toBe(untouched)
+  })
+
+  it('returns the original story when no node actually matches', () => {
+    const { story } = sampleStory()
+    expect(replaceAll(story, 'жираф', 'медведь')).toBe(story)
   })
 })

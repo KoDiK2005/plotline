@@ -2,7 +2,7 @@ import type { Choice, Story, StoryNode, StoryVariable } from '../types/story'
 import { autoLayoutPositions } from '../engine/traverse'
 
 type RawChoice = Omit<Choice, 'condition' | 'effects'> & Partial<Pick<Choice, 'condition' | 'effects'>>
-type RawNode = Omit<StoryNode, 'position' | 'choices'> & { choices: RawChoice[] }
+type RawNode = Omit<StoryNode, 'position' | 'choices' | 'notes'> & { choices: RawChoice[] }
 
 function buildStory(
   id: string,
@@ -18,10 +18,22 @@ function buildStory(
       ...node,
       choices: node.choices.map((c) => ({ ...c, condition: c.condition ?? null, effects: c.effects ?? [] })),
       position: { x: 0, y: 0 },
+      notes: '',
     }
   }
   const now = Date.now()
-  const draft: Story = { id, title, description, startNodeId, nodes, variables, createdAt: now, updatedAt: now }
+  const draft: Story = {
+    id,
+    title,
+    description,
+    author: 'Plotline',
+    writerId: 'writer_plotline',
+    startNodeId,
+    nodes,
+    variables,
+    createdAt: now,
+    updatedAt: now,
+  }
   const positions = autoLayoutPositions(draft)
   for (const nodeId of Object.keys(nodes)) {
     nodes[nodeId] = { ...nodes[nodeId], position: positions[nodeId] ?? { x: 0, y: 0 } }

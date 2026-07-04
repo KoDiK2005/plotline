@@ -98,6 +98,23 @@ describe('parseStoryJson', () => {
     const broken = { ...story, variables: [{ id: 'v1', name: 'Score', initialValue: 0, type: 'string' }] }
     expect(parseStoryJson(broken)).toBeNull()
   })
+
+  it('defaults notes to an empty string for a node saved before that field existed', () => {
+    const story = createStory('Legacy notes')
+    const nodeId = Object.keys(story.nodes)[0]
+    const { notes, ...nodeWithoutNotes } = story.nodes[nodeId]
+    void notes
+    const legacy = { ...story, nodes: { [nodeId]: nodeWithoutNotes } }
+    const parsed = parseStoryJson(legacy)
+    expect(parsed!.nodes[nodeId].notes).toBe('')
+  })
+
+  it('rejects a node with non-string notes', () => {
+    const story = createStory('Test')
+    const nodeId = Object.keys(story.nodes)[0]
+    const broken = { ...story, nodes: { ...story.nodes, [nodeId]: { ...story.nodes[nodeId], notes: 42 } } }
+    expect(parseStoryJson(broken)).toBeNull()
+  })
 })
 
 describe('parseLibraryBackup', () => {
