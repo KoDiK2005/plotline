@@ -131,27 +131,42 @@ export function storyToMapNodes(
 // the same edge and can be reused instead of rebuilt.
 const flowEdgeCache = new WeakMap<Choice, Edge>()
 
+function conditionLabel(story: Story, variableId: string, comparator: string, value: number): string {
+  const v = story.variables.find((sv) => sv.id === variableId)
+  const name = v ? v.name : '?'
+  const COMPARATOR_SYMBOLS: Record<string, string> = {
+    eq: '=', neq: '≠', gt: '>', gte: '≥', lt: '<', lte: '≤',
+  }
+  const sym = COMPARATOR_SYMBOLS[comparator] ?? comparator
+  const displayValue = v?.type === 'boolean' ? (value ? 'Да' : 'Нет') : String(value)
+  return `${name} ${sym} ${displayValue}`
+}
+
 export function storyToFlowEdges(story: Story): Edge[] {
   const edges: Edge[] = []
   for (const node of Object.values(story.nodes)) {
     for (const choice of node.choices) {
       if (choice.targetNodeId && story.nodes[choice.targetNodeId]) {
-        const cached = flowEdgeCache.get(choice)
-        if (cached) {
-          edges.push(cached)
-          continue
+        // Only cache unconditional edges: conditional ones embed variable names that
+        // can change independently of the Choice reference.
+        if (!choice.condition) {
+          const cached = flowEdgeCache.get(choice)
+          if (cached) { edges.push(cached); continue }
         }
+        const condLabel = choice.condition
+          ? conditionLabel(story, choice.condition.variableId, choice.condition.comparator, choice.condition.value)
+          : null
         const edge: Edge = {
           id: choice.id,
           source: node.id,
           sourceHandle: choice.id,
           target: choice.targetNodeId,
           targetHandle: 'target',
-          label: choice.condition ? `🔒 ${choice.text || '…'}` : choice.text || '…',
+          label: condLabel ? `🔒 [${condLabel}] ${choice.text || '…'}` : choice.text || '…',
           type: 'smoothstep',
           style: choice.condition ? { strokeDasharray: '5 4' } : undefined,
         }
-        flowEdgeCache.set(choice, edge)
+        if (!choice.condition) flowEdgeCache.set(choice, edge)
         edges.push(edge)
       }
     }
