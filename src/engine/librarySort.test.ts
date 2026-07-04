@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import type { Story } from '../types/story'
+import type { Story, StoryNode } from '../types/story'
 import { sortStories } from './librarySort'
+
+function makeNode(id: string): StoryNode {
+  return { id, title: '', text: '', choices: [], position: { x: 0, y: 0 }, notes: '' }
+}
 
 function makeStory(overrides: Partial<Story>): Story {
   return {
@@ -53,5 +57,28 @@ describe('sortStories', () => {
 
   it('sorts by play count descending for "most-played", treating missing entries as zero', () => {
     expect(sortStories(stories, 'most-played', {}, { a: 3, b: 7 }).map((s) => s.id)).toEqual(['b', 'a', 'c'])
+  })
+
+  it('sorts by node count descending for "size-desc"', () => {
+    const n1 = makeNode('n1')
+    const n2 = makeNode('n2')
+    const n3 = makeNode('n3')
+    const sized = [
+      makeStory({ id: 'a', nodes: { n1: n1 } }),
+      makeStory({ id: 'b', nodes: { n1: n1, n2: n2, n3: n3 } }),
+      makeStory({ id: 'c', nodes: { n1: n1, n2: n2 } }),
+    ]
+    expect(sortStories(sized, 'size-desc').map((s) => s.id)).toEqual(['b', 'c', 'a'])
+  })
+
+  it('sorts by node count ascending for "size-asc"', () => {
+    const n1 = makeNode('n1')
+    const n2 = makeNode('n2')
+    const sized = [
+      makeStory({ id: 'a', nodes: { n1: n1, n2: n2 } }),
+      makeStory({ id: 'b', nodes: {} }),
+      makeStory({ id: 'c', nodes: { n1: n1 } }),
+    ]
+    expect(sortStories(sized, 'size-asc').map((s) => s.id)).toEqual(['b', 'c', 'a'])
   })
 })
