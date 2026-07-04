@@ -73,10 +73,29 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
   const ending = playState ? isEnding(story, playState) : false
 
   useEffect(() => {
-    if (showMap || ending || choices.length === 0) return
+    if (showMap) return
     function onKeyDown(e: KeyboardEvent) {
       const target = e.target as HTMLElement | null
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return
+      if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (e.key.toLowerCase() === 'b') {
+          setPlayStateStack((s) => {
+            if (s.length === 0) return s
+            const prev = s[s.length - 1]
+            setIsNewDiscovery(false)
+            setPlayState(prev)
+            return s.slice(0, -1)
+          })
+          return
+        }
+        if (e.key.toLowerCase() === 'r') {
+          setIsNewDiscovery(false)
+          setPlayState(startPlay(story))
+          setPlayStateStack([])
+          return
+        }
+      }
+      if (ending || choices.length === 0) return
       const index = Number(e.key) - 1
       if (!Number.isInteger(index) || index < 0 || index >= choices.length) return
       e.preventDefault()

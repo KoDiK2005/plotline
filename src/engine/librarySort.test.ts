@@ -50,4 +50,8 @@ describe('sortStories', () => {
   it('sorts by rating descending for "rating", treating missing entries as zero', () => {
     expect(sortStories(stories, 'rating', { a: 5, c: 10 }).map((s) => s.id)).toEqual(['c', 'a', 'b'])
   })
+
+  it('sorts by play count descending for "most-played", treating missing entries as zero', () => {
+    expect(sortStories(stories, 'most-played', {}, { a: 3, b: 7 }).map((s) => s.id)).toEqual(['b', 'a', 'c'])
+  })
 })

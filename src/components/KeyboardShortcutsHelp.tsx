@@ -26,7 +26,11 @@ const GROUPS: ShortcutGroup[] = [
   },
   {
     title: 'Плеер и превью сцены',
-    shortcuts: [{ keys: '1–9', description: 'Выбрать вариант под этим номером' }],
+    shortcuts: [
+      { keys: '1–9', description: 'Выбрать вариант под этим номером' },
+      { keys: 'B', description: 'Вернуться на предыдущий шаг' },
+      { keys: 'R', description: 'Начать историю заново' },
+    ],
   },
 ]
 

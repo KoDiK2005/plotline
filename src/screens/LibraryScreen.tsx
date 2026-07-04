@@ -70,6 +70,14 @@ export function LibraryScreen() {
     return result
   }, [ratingStats])
 
+  const playCountByStoryId = useMemo(() => {
+    const result: Record<string, number> = {}
+    for (const [id, p] of Object.entries(progress)) {
+      result[id] = p.playCount
+    }
+    return result
+  }, [progress])
+
   const storyList = useMemo(() => {
     const q = query.toLowerCase()
     const matching = Object.values(stories).filter(
@@ -79,9 +87,9 @@ export function LibraryScreen() {
           (s.author && s.author.toLowerCase().includes(q))) &&
         (!favoritesOnly || favorites[s.id]),
     )
-    const sorted = sortStories(filterStories(matching, progress, filter), sort, ratingByStoryId)
+    const sorted = sortStories(filterStories(matching, progress, filter), sort, ratingByStoryId, playCountByStoryId)
     return sorted.sort((a, b) => Number(Boolean(favorites[b.id])) - Number(Boolean(favorites[a.id])))
-  }, [stories, query, sort, filter, progress, favorites, favoritesOnly, ratingByStoryId])
+  }, [stories, query, sort, filter, progress, favorites, favoritesOnly, ratingByStoryId, playCountByStoryId])
 
   async function handleImportFile(file: File) {
     setError(null)
