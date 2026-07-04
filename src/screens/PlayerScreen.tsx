@@ -329,9 +329,31 @@ function PlayerScreenInner({ story }: PlayerScreenInnerProps) {
                 Пройденный путь ({playState.history.length})
               </summary>
               <ol className="mt-2 flex list-decimal flex-col gap-0.5 pl-4">
-                {playState.history.map((id, index) => (
-                  <li key={`${id}-${index}`}>{story.nodes[id]?.title ?? '—'}</li>
-                ))}
+                {playState.history.map((id, index) => {
+                  const isPast = index < playState.history.length - 1
+                  const canJump = isPast && playStateStack.length === playState.history.length - 1
+                  return (
+                    <li key={`${id}-${index}`}>
+                      {canJump ? (
+                        <button
+                          className="text-left hover:text-violet-600 hover:underline dark:hover:text-violet-400"
+                          title="Перейти к этой сцене"
+                          onClick={() => {
+                            setIsNewDiscovery(false)
+                            setPlayState(playStateStack[index])
+                            setPlayStateStack(playStateStack.slice(0, index))
+                          }}
+                        >
+                          {story.nodes[id]?.title ?? '—'}
+                        </button>
+                      ) : (
+                        <span className={isPast ? '' : 'font-medium text-slate-700 dark:text-slate-300'}>
+                          {story.nodes[id]?.title ?? '—'}
+                        </span>
+                      )}
+                    </li>
+                  )
+                })}
               </ol>
             </details>
           )}
