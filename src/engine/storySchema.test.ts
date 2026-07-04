@@ -115,6 +115,28 @@ describe('parseStoryJson', () => {
     const broken = { ...story, nodes: { ...story.nodes, [nodeId]: { ...story.nodes[nodeId], notes: 42 } } }
     expect(parseStoryJson(broken)).toBeNull()
   })
+
+  it('preserves a valid node color when round-tripped through JSON', () => {
+    const story = createStory('Test')
+    const nodeId = Object.keys(story.nodes)[0]
+    const withColor = { ...story, nodes: { ...story.nodes, [nodeId]: { ...story.nodes[nodeId], color: 'amber' } } }
+    const parsed = parseStoryJson(withColor)
+    expect(parsed!.nodes[nodeId].color).toBe('amber')
+  })
+
+  it('rejects a node with an invalid color value', () => {
+    const story = createStory('Test')
+    const nodeId = Object.keys(story.nodes)[0]
+    const broken = { ...story, nodes: { ...story.nodes, [nodeId]: { ...story.nodes[nodeId], color: 'pink' } } }
+    expect(parseStoryJson(broken)).toBeNull()
+  })
+
+  it('omits color on a node that has none (backwards-compatible)', () => {
+    const story = createStory('Test')
+    const nodeId = Object.keys(story.nodes)[0]
+    const parsed = parseStoryJson(JSON.parse(JSON.stringify(story)))
+    expect(parsed!.nodes[nodeId].color).toBeUndefined()
+  })
 })
 
 describe('parseLibraryBackup', () => {

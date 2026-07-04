@@ -1,6 +1,7 @@
-import type { Choice, ChoiceCondition, ChoiceEffect, Story, StoryNode, StoryVariable } from '../types/story'
+import type { Choice, ChoiceCondition, ChoiceEffect, NodeColor, Story, StoryNode, StoryVariable } from '../types/story'
 
 const COMPARATORS = new Set(['eq', 'neq', 'gt', 'gte', 'lt', 'lte'])
+const NODE_COLORS = new Set<NodeColor>(['violet', 'blue', 'green', 'amber', 'red'])
 
 function isChoiceCondition(value: unknown): value is ChoiceCondition {
   if (typeof value !== 'object' || value === null) return false
@@ -58,11 +59,12 @@ function parseStoryNode(value: unknown): StoryNode | null {
     return null
   }
   if (n.notes !== undefined && typeof n.notes !== 'string') return null
+  if (n.color !== undefined && (typeof n.color !== 'string' || !NODE_COLORS.has(n.color as NodeColor))) return null
 
   const choices = n.choices.map(parseChoice)
   if (choices.some((c) => c === null)) return null
 
-  return {
+  const node: StoryNode = {
     id: n.id,
     title: n.title,
     text: n.text,
@@ -70,6 +72,8 @@ function parseStoryNode(value: unknown): StoryNode | null {
     position: n.position as { x: number; y: number },
     notes: (n.notes as string | undefined) ?? '',
   }
+  if (n.color) node.color = n.color as NodeColor
+  return node
 }
 
 /** Runtime guard for a full-library backup file ({ stories: Story[] }). */
