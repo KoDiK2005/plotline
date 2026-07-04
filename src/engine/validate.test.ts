@@ -320,4 +320,37 @@ describe('validateStory', () => {
     const issues = validateStory(story)
     expect(issues.some((i) => i.id.startsWith('long-text-'))).toBe(false)
   })
+
+  it('warns when a reachable scene has no path to any ending (stuck node)', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    // Start has two branches: one leads to an ending, one loops forever.
+    // The loop branch should be flagged as stuck.
+    const { story: s1, nodeId: goodEndId } = addNode(story, { x: 200, y: -100 })
+    const { story: s2, nodeId: loopId } = addNode(s1, { x: 200, y: 100 })
+    story = s2
+    // goodEndId has no choices → it's an ending
+    story = addChoice(story, startId, 'К хорошей концовке')
+    story = linkChoice(story, startId, story.nodes[startId].choices[0].id, goodEndId)
+    story = addChoice(story, startId, 'В бесконечную петлю')
+    story = linkChoice(story, startId, story.nodes[startId].choices[1].id, loopId)
+    // loopId loops back to itself
+    story = addChoice(story, loopId, 'Зациклиться')
+    story = linkChoice(story, loopId, story.nodes[loopId].choices[0].id, loopId)
+    const issues = validateStory(story)
+    expect(issues.some((i) => i.id === `stuck-node-${loopId}`)).toBe(true)
+    expect(issues.some((i) => i.id === `stuck-node-${goodEndId}`)).toBe(false)
+  })
+
+  it('does not flag a stuck-node warning when all reachable scenes can reach an ending', () => {
+    let story = createStory()
+    const startId = story.startNodeId!
+    const { story: s1, nodeId: endId } = addNode(story, { x: 200, y: 0 })
+    story = s1
+    story = addChoice(story, startId, 'К концовке')
+    story = linkChoice(story, startId, story.nodes[startId].choices[0].id, endId)
+    // endId has no choices → ending
+    const issues = validateStory(story)
+    expect(issues.some((i) => i.id.startsWith('stuck-node-'))).toBe(false)
+  })
 })

@@ -1,5 +1,5 @@
 import type { Story } from '../types/story'
-import { getEndingNodeIds, reachableNodeIds } from './traverse'
+import { getEndingNodeIds, nodesWithPathToEnding, reachableNodeIds } from './traverse'
 
 export type IssueSeverity = 'error' | 'warning'
 
@@ -130,6 +130,18 @@ export function validateStory(story: Story): ValidationIssue[] {
         severity: 'warning',
         message: 'Из стартовой сцены нельзя дойти ни до одной концовки — история никогда не закончится.',
       })
+    } else {
+      const canFinish = nodesWithPathToEnding(story)
+      for (const node of nodes) {
+        if (reachable.has(node.id) && !endings.has(node.id) && !canFinish.has(node.id)) {
+          issues.push({
+            id: `stuck-node-${node.id}`,
+            severity: 'warning',
+            nodeId: node.id,
+            message: `Из сцены «${node.title || 'Без названия'}» невозможно дойти до концовки — игрок может застрять здесь навсегда.`,
+          })
+        }
+      }
     }
   }
 

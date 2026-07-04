@@ -100,6 +100,40 @@ export function getStoryStats(story: Story): StoryStats {
   }
 }
 
+/**
+ * Returns the set of node IDs that have at least one path leading to an ending
+ * node. Computed via a reverse BFS from all ending nodes — any node that can
+ * reach an ending (directly or transitively) is included.
+ */
+export function nodesWithPathToEnding(story: Story): Set<string> {
+  const endings = new Set(getEndingNodeIds(story))
+
+  // Build reverse adjacency: for each target, list of source nodes
+  const incomingMap = new Map<string, string[]>()
+  for (const node of Object.values(story.nodes)) {
+    for (const choice of node.choices) {
+      if (choice.targetNodeId && story.nodes[choice.targetNodeId]) {
+        const list = incomingMap.get(choice.targetNodeId) ?? []
+        list.push(node.id)
+        incomingMap.set(choice.targetNodeId, list)
+      }
+    }
+  }
+
+  const canReachEnding = new Set<string>(endings)
+  const queue = [...endings]
+  while (queue.length > 0) {
+    const current = queue.shift()!
+    for (const incoming of incomingMap.get(current) ?? []) {
+      if (!canReachEnding.has(incoming)) {
+        canReachEnding.add(incoming)
+        queue.push(incoming)
+      }
+    }
+  }
+  return canReachEnding
+}
+
 const COLUMN_WIDTH = 320
 const ROW_HEIGHT = 160
 
