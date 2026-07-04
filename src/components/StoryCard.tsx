@@ -38,6 +38,7 @@ export const StoryCard = memo(function StoryCard({
   const stats = useMemo(() => getStoryStats(story), [story])
   const readingMinutes = useMemo(() => estimateReadingMinutes(story), [story])
   const progress = useProgressStore((s) => s.getProgress(story.id))
+  const allEndingsFound = stats.endingCount > 0 && progress.discoveredEndingIds.length >= stats.endingCount
   const isFavorite = useFavoriteStore((s) => s.isFavorite(story.id))
   const toggleFavorite = useFavoriteStore((s) => s.toggleFavorite)
   const ratingStats = useRatingStore((s) => s.getStats(story.id))
@@ -46,7 +47,18 @@ export const StoryCard = memo(function StoryCard({
   return (
     <div className="flex flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
       <header className="flex items-start justify-between gap-2">
-        <h3 className="truncate text-base font-semibold text-slate-900 dark:text-slate-100">{story.title}</h3>
+        <h3 className="flex min-w-0 items-center gap-1.5 text-base font-semibold text-slate-900 dark:text-slate-100">
+          <span className="truncate">{story.title}</span>
+          {allEndingsFound && (
+            <span
+              title="Все концовки найдены!"
+              aria-label="Все концовки найдены"
+              className="shrink-0 text-amber-400"
+            >
+              ✦
+            </span>
+          )}
+        </h3>
         <button
           onClick={() => toggleFavorite(story.id)}
           aria-label={isFavorite ? 'Убрать из избранного' : 'Добавить в избранное'}
@@ -110,7 +122,7 @@ export const StoryCard = memo(function StoryCard({
           aria-label={`Концовок найдено: ${progress.discoveredEndingIds.length} из ${stats.endingCount}`}
         >
           <div
-            className="h-full rounded-full bg-violet-500"
+            className={`h-full rounded-full ${allEndingsFound ? 'bg-amber-400' : 'bg-violet-500'}`}
             style={{ width: `${Math.min(100, (progress.discoveredEndingIds.length / stats.endingCount) * 100)}%` }}
           />
         </div>
