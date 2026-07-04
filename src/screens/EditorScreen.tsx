@@ -127,6 +127,7 @@ function EditorScreenInner() {
   selectedNodeIdRef.current = selectedNodeId
   const setConfirmDeleteRef = useRef(setConfirmDeleteNodeId)
   setConfirmDeleteRef.current = setConfirmDeleteNodeId
+  const handleDuplicateNodeRef = useRef<(id: string) => void>(() => {})
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -161,6 +162,11 @@ function EditorScreenInner() {
           setConfirmDeleteRef.current(selectedNodeIdRef.current)
           return
         }
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd' && selectedNodeIdRef.current) {
+        e.preventDefault()
+        handleDuplicateNodeRef.current(selectedNodeIdRef.current)
+        return
       }
     }
     window.addEventListener('keydown', onKeyDown)
@@ -249,6 +255,7 @@ function EditorScreenInner() {
     })
     if (copyId) selectNode(copyId)
   }
+  handleDuplicateNodeRef.current = handleDuplicateNode
 
   const canUndo = past.length > 0
   const canRedo = future.length > 0

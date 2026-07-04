@@ -42,7 +42,7 @@ describe('IssuesPanel', () => {
     const user = userEvent.setup()
     render(<IssuesPanel issues={validateStory(story)} onUpdate={onUpdate} onJumpToNode={() => {}} />)
 
-    const button = screen.getByRole('button', { name: 'Удалить все варианты без цели (2)' })
+    const button = screen.getByRole('button', { name: 'Удалить варианты без цели (2)' })
     await user.click(button)
 
     expect(onUpdate).toHaveBeenCalledTimes(1)
@@ -55,6 +55,6 @@ describe('IssuesPanel', () => {
     const story = createStory()
     render(<IssuesPanel issues={validateStory(story)} onUpdate={() => {}} onJumpToNode={() => {}} />)
 
-    expect(screen.queryByText(/Удалить все варианты без цели/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Удалить варианты без цели/)).not.toBeInTheDocument()
   })
 })

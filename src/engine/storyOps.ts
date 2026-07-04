@@ -1,5 +1,6 @@
 import type { Choice, ChoiceCondition, ChoiceEffect, Story, StoryNode, StoryVariable, VariableType } from '../types/story'
 import { generateId } from './id'
+import { reachableNodeIds } from './traverse'
 
 function touch(story: Story): Story {
   return { ...story, updatedAt: Date.now() }
@@ -139,6 +140,17 @@ export function deleteChoice(story: Story, nodeId: string, choiceId: string): St
   const choices = node.choices.filter((c) => c.id !== choiceId)
   const nodes = { ...story.nodes, [nodeId]: { ...node, choices } }
   return touch({ ...story, nodes })
+}
+
+export function deleteUnreachableNodes(story: Story): Story {
+  const reachable = reachableNodeIds(story)
+  const unreachableIds = Object.keys(story.nodes).filter((id) => !reachable.has(id))
+  if (unreachableIds.length === 0) return story
+  let result = story
+  for (const id of unreachableIds) {
+    result = deleteNode(result, id)
+  }
+  return result
 }
 
 export function deleteDanglingChoices(story: Story): Story {

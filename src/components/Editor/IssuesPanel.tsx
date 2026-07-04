@@ -1,6 +1,6 @@
 import type { Story } from '../../types/story'
 import type { ValidationIssue } from '../../engine/validate'
-import { deleteDanglingChoices } from '../../engine/storyOps'
+import { deleteDanglingChoices, deleteUnreachableNodes } from '../../engine/storyOps'
 
 interface IssuesPanelProps {
   issues: ValidationIssue[]
@@ -18,16 +18,29 @@ export function IssuesPanel({ issues, onUpdate, onJumpToNode }: IssuesPanelProps
   }
 
   const danglingCount = issues.filter((issue) => issue.id.startsWith('dangling-')).length
+  const unreachableCount = issues.filter((issue) => issue.id.startsWith('unreachable-')).length
 
   return (
     <div className="max-h-48 overflow-y-auto border-b border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
-      {danglingCount > 0 && (
-        <button
-          onClick={() => onUpdate((s) => deleteDanglingChoices(s))}
-          className="mb-2 text-xs font-medium text-violet-600 hover:underline dark:text-violet-400"
-        >
-          Удалить все варианты без цели ({danglingCount})
-        </button>
+      {(danglingCount > 0 || unreachableCount > 0) && (
+        <div className="mb-2 flex gap-3">
+          {danglingCount > 0 && (
+            <button
+              onClick={() => onUpdate((s) => deleteDanglingChoices(s))}
+              className="text-xs font-medium text-violet-600 hover:underline dark:text-violet-400"
+            >
+              Удалить варианты без цели ({danglingCount})
+            </button>
+          )}
+          {unreachableCount > 0 && (
+            <button
+              onClick={() => onUpdate((s) => deleteUnreachableNodes(s))}
+              className="text-xs font-medium text-violet-600 hover:underline dark:text-violet-400"
+            >
+              Удалить недостижимые сцены ({unreachableCount})
+            </button>
+          )}
+        </div>
       )}
       <ul className="flex flex-col gap-1.5">
         {issues.map((issue) => (

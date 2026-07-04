@@ -22,6 +22,7 @@ const GROUPS: ShortcutGroup[] = [
       { keys: 'Ctrl/⌘ + Shift + Z, Ctrl/⌘ + Y', description: 'Повторить отменённое изменение' },
       { keys: 'Ctrl/⌘ + K', description: 'Перейти к сцене по названию' },
       { keys: 'N', description: 'Создать новую сцену (связать с выбранной)' },
+      { keys: 'Ctrl/⌘ + D', description: 'Дублировать выбранную сцену' },
       { keys: 'Delete / Backspace', description: 'Удалить выбранную сцену' },
     ],
   },
