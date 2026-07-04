@@ -115,22 +115,33 @@ function EditorScreenInner() {
     updateStory(currentStoryId, () => next)
   }, [currentStoryId, future, past, updateStory])
 
+  const handleAddNodeRef = useRef<() => void>(() => {})
+
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       const target = e.target as HTMLElement | null
-      if (!(e.ctrlKey || e.metaKey)) return
-      if (e.key.toLowerCase() === 'k') {
+      const inTextField = Boolean(target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable))
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
         setShowJump((v) => !v)
         return
       }
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return
-      if (e.key.toLowerCase() === 'z' && !e.shiftKey) {
+      if (inTextField) return
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key.toLowerCase() === 'z' && !e.shiftKey) {
+          e.preventDefault()
+          undo()
+          return
+        }
+        if (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey)) {
+          e.preventDefault()
+          redo()
+          return
+        }
+      }
+      if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key.toLowerCase() === 'n') {
         e.preventDefault()
-        undo()
-      } else if (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey)) {
-        e.preventDefault()
-        redo()
+        handleAddNodeRef.current()
       }
     }
     window.addEventListener('keydown', onKeyDown)
@@ -200,6 +211,7 @@ function EditorScreenInner() {
     })
     selectNode(newNodeId)
   }
+  handleAddNodeRef.current = handleAddNode
 
   function handleDuplicateNode(nodeId: string) {
     let copyId: string | null = null

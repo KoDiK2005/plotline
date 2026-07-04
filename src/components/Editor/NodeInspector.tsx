@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import type { Comparator, Story, VariableType } from '../../types/story'
+import type { Comparator, NodeColor, Story, VariableType } from '../../types/story'
 import { countWords } from '../../engine/readingTime'
 import {
   addChoice,
@@ -53,6 +53,13 @@ export function NodeInspector({
     () => Object.values(story.nodes).filter((n) => n.id !== nodeId),
     [story.nodes, nodeId],
   )
+  const inboundCount = useMemo(
+    () => Object.values(story.nodes).reduce(
+      (sum, n) => sum + n.choices.filter((c) => c.targetNodeId === nodeId).length,
+      0,
+    ),
+    [story.nodes, nodeId],
+  )
   if (!node) return null
 
   const isStart = story.startNodeId === nodeId
@@ -64,7 +71,17 @@ export function NodeInspector({
   return (
     <aside className="flex w-80 shrink-0 flex-col gap-4 overflow-y-auto border-l border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Сцена</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Сцена</h2>
+          {inboundCount > 0 && (
+            <span
+              title={`На эту сцену ведут переходы из ${inboundCount} ${inboundCount === 1 ? 'варианта' : 'вариантов'}`}
+              className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+            >
+              ← {inboundCount}
+            </span>
+          )}
+        </div>
         <button
           onClick={onClose}
           aria-label="Закрыть панель сцены"
@@ -110,6 +127,36 @@ export function NodeInspector({
           className={`${fieldClass} resize-none border-dashed`}
         />
       </label>
+
+      <div className="flex flex-col gap-1">
+        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Цвет метки</span>
+        <div className="flex items-center gap-1.5">
+          {([undefined, 'violet', 'blue', 'green', 'amber', 'red'] as (NodeColor | undefined)[]).map((c) => (
+            <button
+              key={c ?? 'none'}
+              onClick={() => onUpdate((s) => updateNode(s, nodeId, { color: c }))}
+              title={c ?? 'Нет'}
+              aria-label={c ?? 'Нет цвета'}
+              aria-pressed={node.color === c}
+              className={`h-5 w-5 rounded-full border-2 transition-transform hover:scale-110 ${
+                node.color === c ? 'border-slate-700 dark:border-slate-200' : 'border-transparent'
+              } ${
+                c === undefined
+                  ? 'bg-slate-200 dark:bg-slate-700'
+                  : c === 'violet'
+                    ? 'bg-violet-400'
+                    : c === 'blue'
+                      ? 'bg-blue-400'
+                      : c === 'green'
+                        ? 'bg-emerald-400'
+                        : c === 'amber'
+                          ? 'bg-amber-400'
+                          : 'bg-red-400'
+              }`}
+            />
+          ))}
+        </div>
+      </div>
 
       <div className="flex gap-2">
         <Button

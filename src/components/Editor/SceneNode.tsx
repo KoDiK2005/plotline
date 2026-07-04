@@ -1,5 +1,6 @@
 import { memo } from 'react'
 import { Handle, Position, type NodeProps } from 'reactflow'
+import type { NodeColor } from '../../types/story'
 import type { SceneNodeData } from '../../engine/flowAdapters'
 
 function wordCountLabel(count: number): string {
@@ -11,6 +12,14 @@ function wordCountLabel(count: number): string {
   return 'слов'
 }
 
+const COLOR_STRIPE: Record<NodeColor, string> = {
+  violet: 'bg-violet-400',
+  blue: 'bg-blue-400',
+  green: 'bg-emerald-400',
+  amber: 'bg-amber-400',
+  red: 'bg-red-400',
+}
+
 export const SceneNode = memo(function SceneNode({ data, selected }: NodeProps<SceneNodeData>) {
   const borderClass = selected
     ? 'border-violet-500'
@@ -19,7 +28,10 @@ export const SceneNode = memo(function SceneNode({ data, selected }: NodeProps<S
       : 'border-slate-300 dark:border-slate-700'
 
   return (
-    <div className={`w-64 rounded-xl border-2 bg-white text-left shadow-sm dark:bg-slate-900 ${borderClass}`}>
+    <div className={`w-64 overflow-hidden rounded-xl border-2 bg-white text-left shadow-sm dark:bg-slate-900 ${borderClass}`}>
+      {data.color && (
+        <div className={`h-1 w-full ${COLOR_STRIPE[data.color]}`} aria-hidden="true" />
+      )}
       <Handle type="target" id="target" position={Position.Left} className="!h-3 !w-3 !bg-slate-400" />
 
       <div className="border-b border-slate-200 px-3 py-2 dark:border-slate-800">

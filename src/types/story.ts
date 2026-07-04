@@ -20,6 +20,8 @@ export interface Choice {
   effects: ChoiceEffect[]
 }
 
+export type NodeColor = 'violet' | 'blue' | 'green' | 'amber' | 'red'
+
 export interface StoryNode {
   id: string
   title: string
@@ -28,6 +30,8 @@ export interface StoryNode {
   position: { x: number; y: number }
   /** Author-only notes, never shown to the player (in-app or in HTML export). */
   notes: string
+  /** Optional color label for visual grouping on the canvas. Not shown to players. */
+  color?: NodeColor
 }
 
 export type VariableType = 'number' | 'boolean'
