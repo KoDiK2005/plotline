@@ -5,17 +5,20 @@ import { createStory } from '../engine/storyOps'
 import { useFavoriteStore } from '../store/useFavoriteStore'
 import { useLibraryStore } from '../store/useLibraryStore'
 import { useProgressStore } from '../store/useProgressStore'
+import { useSettingsStore } from '../store/useSettingsStore'
 import { useUIStore } from '../store/useUIStore'
 import { LibraryScreen } from './LibraryScreen'
 
 const initialLibraryState = useLibraryStore.getState()
 const initialUIState = useUIStore.getState()
 const initialProgressState = useProgressStore.getState()
+const initialSettingsState = useSettingsStore.getState()
 
 beforeEach(() => {
   useLibraryStore.setState(initialLibraryState, true)
   useUIStore.setState(initialUIState, true)
   useProgressStore.setState(initialProgressState, true)
+  useSettingsStore.setState(initialSettingsState, true)
   useFavoriteStore.setState({ favorites: {} })
   localStorage.clear()
   // Ensure the library reflects the known-good sample set regardless of any

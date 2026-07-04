@@ -15,6 +15,7 @@ import { useFavoriteStore } from '../store/useFavoriteStore'
 import { useLibraryStore } from '../store/useLibraryStore'
 import { useProgressStore } from '../store/useProgressStore'
 import { useRatingStore } from '../store/useRatingStore'
+import { useSettingsStore } from '../store/useSettingsStore'
 import { useUIStore } from '../store/useUIStore'
 import { downloadJson, readJsonFile } from '../utils/file'
 
@@ -29,14 +30,17 @@ export function LibraryScreen() {
   const favorites = useFavoriteStore((s) => s.favorites)
   const ratingStats = useRatingStore((s) => s.stats)
   const loadRatingStats = useRatingStore((s) => s.loadStats)
+  const sort = useSettingsStore((s) => s.librarySort)
+  const filter = useSettingsStore((s) => s.libraryFilter)
+  const favoritesOnly = useSettingsStore((s) => s.libraryFavoritesOnly)
+  const setSort = useSettingsStore((s) => s.setLibrarySort)
+  const setFilter = useSettingsStore((s) => s.setLibraryFilter)
+  const setFavoritesOnly = useSettingsStore((s) => s.setLibraryFavoritesOnly)
   const openEditor = useUIStore((s) => s.openEditor)
   const openPlayer = useUIStore((s) => s.openPlayer)
   const openShortcuts = useUIStore((s) => s.openShortcuts)
 
   const [query, setQuery] = useState('')
-  const [sort, setSort] = useState<SortOption>('updated')
-  const [filter, setFilter] = useState<FilterOption>('all')
-  const [favoritesOnly, setFavoritesOnly] = useState(false)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [pendingResetProgressId, setPendingResetProgressId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -155,7 +159,7 @@ export function LibraryScreen() {
           <Button
             variant={favoritesOnly ? 'secondary' : 'ghost'}
             aria-pressed={favoritesOnly}
-            onClick={() => setFavoritesOnly((v) => !v)}
+            onClick={() => setFavoritesOnly(!favoritesOnly)}
           >
             ★ Избранное
           </Button>

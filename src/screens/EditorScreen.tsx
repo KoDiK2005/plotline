@@ -36,8 +36,8 @@ import type { Story } from '../types/story'
 
 const nodeTypes = { scene: SceneNode }
 
-// Rapid edits within this window (e.g. typing in a text field) collapse into a single undo step.
 const HISTORY_GROUP_MS = 600
+const MAX_HISTORY = 100
 
 function EditorScreenInner() {
   const currentStoryId = useUIStore((s) => s.currentStoryId)
@@ -79,7 +79,10 @@ function EditorScreenInner() {
       if (!current) return
       const now = Date.now()
       if (now - lastMutationAtRef.current > HISTORY_GROUP_MS) {
-        setPast((p) => [...p, current])
+        setPast((p) => {
+          const next = [...p, current]
+          return next.length > MAX_HISTORY ? next.slice(next.length - MAX_HISTORY) : next
+        })
         setFuture([])
       }
       lastMutationAtRef.current = now
