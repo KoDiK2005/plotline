@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import type { Comparator, NodeColor, Story, VariableType } from '../../types/story'
 import { countWords } from '../../engine/readingTime'
 import {
@@ -37,6 +37,55 @@ interface NodeInspectorProps {
 const fieldClass =
   'rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-900 outline-none ' +
   'focus:border-violet-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100'
+
+function TagEditor({ tags, onChange }: { tags: string[]; onChange: (tags: string[]) => void }) {
+  const [input, setInput] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  function addTag(raw: string) {
+    const tag = raw.trim().toLowerCase().replace(/\s+/g, '-')
+    if (!tag || tags.includes(tag)) { setInput(''); return }
+    onChange([...tags, tag])
+    setInput('')
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Метки</span>
+      <div className="flex flex-wrap gap-1">
+        {tags.map((tag) => (
+          <span
+            key={tag}
+            className="inline-flex items-center gap-0.5 rounded-full bg-violet-500/10 px-2 py-0.5 text-[11px] font-medium text-violet-700 dark:text-violet-300"
+          >
+            {tag}
+            <button
+              type="button"
+              onClick={() => onChange(tags.filter((t) => t !== tag))}
+              aria-label={`Удалить метку ${tag}`}
+              className="ml-0.5 leading-none hover:text-red-500"
+            >
+              ×
+            </button>
+          </span>
+        ))}
+        <input
+          ref={inputRef}
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(input) }
+            if (e.key === 'Backspace' && !input && tags.length > 0) onChange(tags.slice(0, -1))
+          }}
+          onBlur={() => { if (input.trim()) addTag(input) }}
+          placeholder={tags.length === 0 ? 'Добавить метку…' : ''}
+          className="min-w-[6rem] flex-1 bg-transparent text-xs outline-none placeholder:text-slate-400"
+        />
+      </div>
+    </div>
+  )
+}
 
 export function NodeInspector({
   story,
@@ -170,6 +219,11 @@ export function NodeInspector({
           ))}
         </div>
       </div>
+
+      <TagEditor
+        tags={node.tags ?? []}
+        onChange={(tags) => onUpdate((s) => updateNode(s, nodeId, { tags }))}
+      />
 
       <div className="flex gap-2">
         <Button

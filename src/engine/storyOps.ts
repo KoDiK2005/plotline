@@ -47,7 +47,7 @@ export function addNode(story: Story, position = { x: 0, y: 0 }): { story: Story
 export function updateNode(
   story: Story,
   nodeId: string,
-  patch: Partial<Pick<StoryNode, 'title' | 'text' | 'notes' | 'color'>>,
+  patch: Partial<Pick<StoryNode, 'title' | 'text' | 'notes' | 'color' | 'tags'>>,
 ): Story {
   const node = story.nodes[nodeId]
   if (!node) return story

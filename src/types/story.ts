@@ -32,6 +32,8 @@ export interface StoryNode {
   notes: string
   /** Optional color label for visual grouping on the canvas. Not shown to players. */
   color?: NodeColor
+  /** Author-assigned tags for grouping and filtering. Not shown to players. */
+  tags?: string[]
 }
 
 export type VariableType = 'number' | 'boolean'
