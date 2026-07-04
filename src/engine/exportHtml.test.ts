@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addChoice, addVariable, createStory, linkChoice, setChoiceCondition, updateNode } from './storyOps'
+import { addChoice, addVariable, createStory, linkChoice, setChoiceCondition, updateMeta, updateNode } from './storyOps'
 import { buildStandaloneHtml } from './exportHtml'
 
 describe('buildStandaloneHtml', () => {
@@ -74,5 +74,19 @@ describe('buildStandaloneHtml', () => {
     expect(html).toContain('Переменные')
     expect(html).toContain('STORY.variables')
     expect(html).toContain("className = 'vars'")
+  })
+
+  it('includes the story description below the title when one is set', () => {
+    let story = createStory('Described Story')
+    story = updateMeta(story, { description: 'A tale of mystery & adventure.' })
+    const html = buildStandaloneHtml(story)
+    expect(html).toContain('class="description"')
+    expect(html).toContain('A tale of mystery &amp; adventure.')
+  })
+
+  it('omits the description paragraph when the description is blank', () => {
+    const story = createStory('No Description')
+    const html = buildStandaloneHtml(story)
+    expect(html).not.toContain('class="description"')
   })
 })

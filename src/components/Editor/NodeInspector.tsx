@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import type { Comparator, Story, VariableType } from '../../types/story'
+import { countWords } from '../../engine/readingTime'
 import {
   addChoice,
   deleteChoice,
@@ -83,7 +84,14 @@ export function NodeInspector({
       </label>
 
       <label className="flex flex-col gap-1 text-xs font-medium text-slate-500 dark:text-slate-400">
-        Текст сцены
+        <span className="flex items-center justify-between">
+          Текст сцены
+          {node.text.trim() && (
+            <span className="font-normal text-slate-400 dark:text-slate-500">
+              {countWords(node.text)} сл.
+            </span>
+          )}
+        </span>
         <textarea
           value={node.text}
           onChange={(e) => onUpdate((s) => updateNode(s, nodeId, { text: e.target.value }))}

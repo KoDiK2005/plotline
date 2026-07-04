@@ -28,7 +28,8 @@ export function buildStandaloneHtml(story: Story): string {
   :root { color-scheme: light dark; }
   body { font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; max-width: 640px; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; line-height: 1.6; background: #f8fafc; color: #0f172a; }
   @media (prefers-color-scheme: dark) { body { background: #020617; color: #e2e8f0; } }
-  h1 { font-size: 1.25rem; margin: 0 0 1.5rem; }
+  h1 { font-size: 1.25rem; margin: 0 0 .5rem; }
+  .description { margin: 0 0 1.5rem; opacity: .7; font-size: .9rem; white-space: pre-line; }
   .scene { border: 1px solid rgba(100,116,139,.3); border-radius: 1rem; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; background: rgba(255,255,255,.6); }
   @media (prefers-color-scheme: dark) { .scene { background: rgba(15,23,42,.6); } }
   .scene h2 { margin: 0 0 .5rem; font-size: 1.05rem; }
@@ -56,7 +57,7 @@ export function buildStandaloneHtml(story: Story): string {
 </style>
 </head>
 <body>
-<h1>${escapeHtml(story.title)}</h1>
+<h1>${escapeHtml(story.title)}</h1>${story.description.trim() ? `\n<p class="description">${escapeHtml(story.description)}</p>` : ''}
 <div id="app"></div>
 <footer>Сделано в Plotline</footer>
 <script>
