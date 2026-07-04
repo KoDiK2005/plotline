@@ -12,6 +12,7 @@ function baseData(overrides: Partial<SceneNodeData> = {}): SceneNodeData {
     isUnreachable: false,
     isEnding: false,
     wordCount: 3,
+    hasNotes: false,
     choices: [],
     ...overrides,
   }

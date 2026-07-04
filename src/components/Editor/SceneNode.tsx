@@ -62,12 +62,23 @@ export const SceneNode = memo(function SceneNode({ data, selected }: NodeProps<S
         <p className="mt-0.5 line-clamp-2 text-xs text-slate-500 dark:text-slate-500">
           {data.text || 'Нет текста…'}
         </p>
-        <p
-          title="Количество слов в тексте сцены"
-          className="mt-1 text-right text-[10px] text-slate-400 dark:text-slate-600"
-        >
-          {data.wordCount} {wordCountLabel(data.wordCount)}
-        </p>
+        <div className="mt-1 flex items-center justify-between">
+          {data.hasNotes ? (
+            <span
+              title="Есть заметки автора"
+              className="text-[10px] text-violet-400 dark:text-violet-500"
+              aria-label="Есть заметки автора"
+            >
+              ✏
+            </span>
+          ) : <span />}
+          <p
+            title="Количество слов в тексте сцены"
+            className="text-right text-[10px] text-slate-400 dark:text-slate-600"
+          >
+            {data.wordCount} {wordCountLabel(data.wordCount)}
+          </p>
+        </div>
       </div>
 
       {data.choices.length === 0 ? (

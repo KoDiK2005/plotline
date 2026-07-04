@@ -27,7 +27,7 @@ import { SceneNode } from '../components/Editor/SceneNode'
 import { VariablesPanel } from '../components/Editor/VariablesPanel'
 import type { SceneNodeData } from '../engine/flowAdapters'
 import { storyToFlowEdges, storyToFlowNodes } from '../engine/flowAdapters'
-import { addNode, applyPositions, deleteNode, duplicateNode, linkChoice, moveNode, updateMeta } from '../engine/storyOps'
+import { addChoice, addNode, applyPositions, deleteNode, duplicateNode, linkChoice, moveNode, updateMeta } from '../engine/storyOps'
 import { autoLayoutPositions, getStoryStats } from '../engine/traverse'
 import { validateStory } from '../engine/validate'
 import { useLibraryStore } from '../store/useLibraryStore'
@@ -210,11 +210,19 @@ function EditorScreenInner() {
 
   function handleAddNode() {
     const count = Object.keys(currentStory.nodes).length
+    const fromNodeId = selectedNodeId && currentStory.nodes[selectedNodeId] ? selectedNodeId : null
+    const fromNode = fromNodeId ? currentStory.nodes[fromNodeId] : null
+    const basePos = fromNode
+      ? { x: fromNode.position.x + 320, y: fromNode.position.y }
+      : { x: 40 * count, y: 40 * count }
     let newNodeId = ''
     mutate((s) => {
-      const { story: nextStory, nodeId } = addNode(s, { x: 40 * count, y: 40 * count })
+      const { story: withNew, nodeId } = addNode(s, basePos)
       newNodeId = nodeId
-      return nextStory
+      if (!fromNodeId) return withNew
+      const withChoice = addChoice(withNew, fromNodeId)
+      const choiceId = withChoice.nodes[fromNodeId].choices[withChoice.nodes[fromNodeId].choices.length - 1].id
+      return linkChoice(withChoice, fromNodeId, choiceId, nodeId)
     })
     selectNode(newNodeId)
   }

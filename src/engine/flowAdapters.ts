@@ -10,6 +10,7 @@ export interface SceneNodeData {
   isUnreachable: boolean
   isEnding: boolean
   wordCount: number
+  hasNotes: boolean
   color?: NodeColor
   choices: { id: string; text: string; linked: boolean; conditional: boolean; hasEffects: boolean }[]
 }
@@ -48,6 +49,7 @@ export function storyToFlowNodes(story: Story): Node<SceneNodeData>[] {
         isUnreachable,
         isEnding,
         wordCount: countWords(node.text),
+        hasNotes: node.notes.trim().length > 0,
         color: node.color,
         choices: node.choices.map((c) => ({
           id: c.id,
