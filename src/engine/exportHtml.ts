@@ -41,6 +41,10 @@ export function buildStandaloneHtml(story: Story): string {
   .ending { text-align: center; }
   .ending .badge { display: inline-block; padding: .35rem 1rem; border-radius: 999px; background: rgba(139,92,246,.12); color: #7c3aed; font-size: .85rem; font-weight: 600; margin-bottom: .75rem; }
   button.restart { padding: .6rem 1.25rem; border-radius: .75rem; border: none; background: #7c3aed; color: white; font-size: .9rem; cursor: pointer; font-family: inherit; }
+  .nav-bar { display: flex; gap: .5rem; margin-bottom: 1rem; }
+  button.btn-back { padding: .4rem .9rem; border-radius: .75rem; border: 1px solid rgba(100,116,139,.4); background: transparent; color: inherit; font-size: .85rem; cursor: pointer; font-family: inherit; }
+  button.btn-back:hover { border-color: #8b5cf6; }
+  button.btn-back:disabled { opacity: .35; cursor: not-allowed; }
   #restore { border: 1px solid rgba(100,116,139,.3); border-radius: 1rem; padding: 1.5rem; text-align: center; margin-bottom: 1.5rem; }
   #restore p { margin: 0 0 1rem; font-size: .95rem; }
   .restore-btns { display: flex; gap: .75rem; justify-content: center; flex-wrap: wrap; }
@@ -122,11 +126,29 @@ export function buildStandaloneHtml(story: Story): string {
   }
 
   var state = startState();
+  var stateStack = [];
   var currentChoices = [];
+
+  function goBack() {
+    if (stateStack.length === 0) return;
+    state = stateStack.pop();
+    render();
+  }
 
   function render() {
     var app = document.getElementById('app');
     app.innerHTML = '';
+
+    var navBar = document.createElement('div');
+    navBar.className = 'nav-bar';
+    var backBtn = document.createElement('button');
+    backBtn.className = 'btn-back';
+    backBtn.textContent = '← Назад';
+    backBtn.disabled = stateStack.length === 0;
+    backBtn.onclick = goBack;
+    navBar.appendChild(backBtn);
+    app.appendChild(navBar);
+
     var node = STORY.nodes[state.nodeId];
     if (!node) {
       app.textContent = 'В этой истории нет стартовой сцены.';
@@ -153,13 +175,22 @@ export function buildStandaloneHtml(story: Story): string {
       var badge = document.createElement('span');
       badge.className = 'badge';
       badge.textContent = 'Конец истории';
+      var endingBtns = document.createElement('div');
+      endingBtns.style.cssText = 'display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin-top:.75rem';
+      if (stateStack.length > 0) {
+        var backEnd = document.createElement('button');
+        backEnd.className = 'btn-back';
+        backEnd.textContent = '← Назад';
+        backEnd.onclick = goBack;
+        endingBtns.appendChild(backEnd);
+      }
       var restart = document.createElement('button');
       restart.className = 'restart';
       restart.textContent = 'Сыграть заново';
-      restart.onclick = function () { state = startState(); clearSave(); render(); };
+      restart.onclick = function () { state = startState(); stateStack = []; clearSave(); render(); };
+      endingBtns.appendChild(restart);
       ending.appendChild(badge);
-      ending.appendChild(document.createElement('br'));
-      ending.appendChild(restart);
+      ending.appendChild(endingBtns);
       app.appendChild(ending);
     } else {
       persistState();
@@ -177,10 +208,11 @@ export function buildStandaloneHtml(story: Story): string {
         var label = document.createElement('span');
         label.textContent = choice.text || '...';
         btn.appendChild(label);
-        btn.onclick = function () {
-          state = { nodeId: choice.targetNodeId, variables: applyEffects(choice, state.variables) };
+        btn.onclick = (function (c) { return function () {
+          stateStack.push(state);
+          state = { nodeId: c.targetNodeId, variables: applyEffects(c, state.variables) };
           render();
-        };
+        }; })(choice);
         choicesWrap.appendChild(btn);
       });
       app.appendChild(choicesWrap);
@@ -214,10 +246,15 @@ export function buildStandaloneHtml(story: Story): string {
   document.addEventListener('keydown', function (e) {
     var target = e.target;
     if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+    if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+      if (e.key.toLowerCase() === 'b') { e.preventDefault(); goBack(); return; }
+      if (e.key.toLowerCase() === 'r') { e.preventDefault(); state = startState(); stateStack = []; clearSave(); render(); return; }
+    }
     var index = Number(e.key) - 1;
     if (!Number.isInteger(index) || index < 0 || index >= currentChoices.length) return;
     e.preventDefault();
     var choice = currentChoices[index];
+    stateStack.push(state);
     state = { nodeId: choice.targetNodeId, variables: applyEffects(choice, state.variables) };
     render();
   });
