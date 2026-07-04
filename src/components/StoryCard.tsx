@@ -64,6 +64,11 @@ export const StoryCard = memo(function StoryCard({
       <p className="mt-1 line-clamp-2 min-h-[2.5rem] text-sm text-slate-600 dark:text-slate-400">
         {story.description || 'Без описания.'}
       </p>
+      {story.author && story.author !== 'Аноним' && (
+        <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
+          {story.author}
+        </p>
+      )}
 
       <div className="mt-3 flex flex-wrap items-center gap-1.5">
         <StatPill label="сцен" value={stats.nodeCount} />

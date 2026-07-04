@@ -34,7 +34,7 @@ describe('LibraryScreen', () => {
   it('renders the header and the three bundled sample stories', () => {
     render(<LibraryScreen />)
 
-    expect(screen.getByText('Plotline')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Plotline' })).toBeInTheDocument()
     expect(screen.getByText('Сигнал из глубины')).toBeInTheDocument()
     expect(screen.getByText('Кофейня на перекрёстке')).toBeInTheDocument()
     expect(screen.getByText('Ключ от чердака')).toBeInTheDocument()
